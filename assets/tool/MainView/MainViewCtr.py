@@ -14,6 +14,8 @@ CURRENT_PATH = os.path.dirname(os.path.realpath(__file__)); # 当前文件目录
 
 require(GetPathByRelativePath("../", CURRENT_PATH), "_loadtool"); # 加载工具配置
 
+CsharpGameDataParser = require(GetPathByRelativePath("../", CURRENT_PATH), "utils", "CsharpGameDataParser");
+
 def getRegisterEventMap(G_EVENT):
 	return {
 		# G_EVENT.TO_UPDATE_VIEW : "updateView",
@@ -21,6 +23,11 @@ def getRegisterEventMap(G_EVENT):
 
 class MainViewCtr(object):
 	"""docstring for MainViewCtr"""
+
+	CODE_FORMAT_CHOICES = {
+		"C#": "createCsharpGameDataParser",
+	}
+
 	def __init__(self, parent, params = {}):
 		super(MainViewCtr, self).__init__();
 		self._className_ = MainViewCtr.__name__;
@@ -102,16 +109,21 @@ class MainViewCtr(object):
 		if not params:
 			self.getUI().showMessageDialog("输入数据有误！");
 			return;
+		funcName = self.CODE_FORMAT_CHOICES[params["radio"]];
+		if not hasattr(self, funcName):
+			self.getUI().showMessageDialog("输入格式不存在！");
+			return;
 		self.__isParsing = True;
-		# todo 处理解析逻辑
-		self.rebindBehaviorByKey(params["radio"]);
-		srcPath  = params["srcPath"];
-		tgtPath = os.path.join(params["tgtPath"], "code_output");
-		for root, _, files in os.walk(srcPath):
-			pass
+		# 处理解析逻辑
+		gameDataParser = getattr(self, funcName)(params);
+		gameDataParser.parse(self.outputLog);
+		# 完成解析
+		self.__isParsing = False;
 
-	def rebindBehaviorByKey(self, key):
-		pass;
+	def createCsharpGameDataParser(self, params):
+		templatePath = GetPathByRelativePath("../template/csharp", CURRENT_PATH);
+		collectionsPath = os.path.join(params["tgtPath"], "TableDataCollections.cs");
+		return CsharpGameDataParser(params["srcPath"], params["tgtPath"], templatePath, collectionsPath);
 
-	def parseData(self, dirPath):
-		pass;
+	def outputLog(self, text, style=""):
+		wx.CallAfter(self.getUI().outputLog, text, style);

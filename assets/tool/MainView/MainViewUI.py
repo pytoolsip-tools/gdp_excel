@@ -12,10 +12,6 @@ from function.base import *;
 
 from ui import DirInputView;
 
-CODE_FORMAT_CHOICES = [
-	"C#",
-];
-
 class MainViewUI(wx.ScrolledWindow):
 	"""docstring for MainViewUI"""
 	def __init__(self, parent, id = -1, curPath = "", viewCtr = None, params = {}):
@@ -98,7 +94,7 @@ class MainViewUI(wx.ScrolledWindow):
 	def createParamsView(self):
 		self.getCtr().createCtrByKey("ParamsViewCtr", self._curPath + "../view/ParamsView", params = {
 			"size" : self.GetSize(),
-			"choices" : CODE_FORMAT_CHOICES,
+			"choices" : list(self.getCtr().CODE_FORMAT_CHOICES.keys()),
 		});
 
 	def createParseBtn(self):
@@ -108,6 +104,29 @@ class MainViewUI(wx.ScrolledWindow):
 	def createOutput(self):
 		self.__output = wx.TextCtrl(self, size = (self.GetSize().x, 400), value = "- 解析日志显示区 -", style = wx.TE_READONLY|wx.TE_MULTILINE|wx.TE_RICH);
 		pass;
+	
+	def outputLog(self, text, style = "", isReset=False):
+		if isReset:
+			self.__output.SetValue("");
+		if not text:
+			return;
+		attr = None;
+		if style == "normal":
+			attr = wx.TextAttr(wx.Colour(100, 100, 100), font = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL));
+		elif style == "bold":
+			attr = wx.TextAttr(wx.Colour(0, 0, 0), font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD));
+		elif style == "error":
+			attr = wx.TextAttr(wx.Colour(255, 0, 0), font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD));
+		elif style == "warning":
+			attr = wx.TextAttr(wx.Colour(218,165,32), font = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD));
+		# 添加富文本
+		if attr:
+			defaultStyle = self.__output.GetDefaultStyle();
+			self.__output.SetDefaultStyle(attr);
+			self.__output.AppendText(text);
+			self.__output.SetDefaultStyle(defaultStyle);
+		else:
+			self.__output.AppendText(text);
 
 	def showMessageDialog(self, message, caption = "提示", style = wx.OK):
 		return wx.MessageDialog(self, message, caption = caption, style = style).ShowModal();
