@@ -49,7 +49,7 @@ class ContentViewUI(wx.Panel):
 		box.Add(self.__title, flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
 		box.Add(self.getCtr().getUIByKey("ParamsViewCtr"), flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
 		box.Add(self.__parseBtn, flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
-		box.Add(self.__gauge, flag = wx.ALIGN_CENTER|wx.TOP, border = 10);
+		box.Add(self.__gauge, flag = wx.ALIGN_CENTER|wx.BOTTOM, border = 10);
 		box.Add(self.__output, flag = wx.ALIGN_CENTER|wx.BOTTOM, border = 10);
 		self.SetSizerAndFit(box);
 

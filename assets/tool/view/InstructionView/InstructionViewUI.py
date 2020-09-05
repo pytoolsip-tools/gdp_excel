@@ -10,18 +10,17 @@ from _Global import _GG;
 from function.base import *;
 
 descriptionConfig = [
-	"【输入目录】存放需要导出的Excel文件夹路径。",
-	"【输出目录】存放所导出代码的文件夹路径（如为空，则默认为输入目录）。”",
-	"【导出格式】导出的代码格式。",
-	"",
-	"【以下为Excel表格格式要求】",
-	"",
-	"【Sheet】工作簿名称必须带有引文括号，且括号内必须为英文字符，如“测试表(TestTable)”。",
-	"【注释】在需要注释行（即不导出该行数据）的第一个单元格中，开头添加“#”。",
-	"【Export】第一行中，在需要导出列的单元格中，添加“*”，会导出该列对应的key，以加快在代码中查找该key对应的数据。",
-	"【Key】从第一行开始，直到出现没被注释，且存在值不为空的行，作为所要导出的key。",
-	"【类型】从Key所在行开始，直到出现没被注释，且存在值不为空的行，作为各列所要导出的数据类型。",
-	"【数据】从类型所在行开始，出现没被注释，且存在值不为空的行，会导出该行的数据。",
+	(">>【输入目录】存放需要导出的Excel文件夹路径。", wx.Colour(0, 82, 51)),
+	(">>【输出目录】存放所导出代码的文件夹路径（如为空，则默认为输入目录）。”", wx.Colour(0, 136, 51)),
+	(">>【导出格式】导出的代码格式。", wx.Colour(0, 180, 51)),
+	("----------", wx.Colour(0, 0, 0)),
+	(">| Excel表格格式要求： |<", wx.Colour(255, 0, 0)),
+	("【Sheet】工作簿名称必须带有引文括号，且括号内必须为英文字符，如“测试表(TestTable)”。", wx.Colour(51, 51, 153)),
+	("【注释】在需要注释行（即不导出该行数据）的第一个单元格中，开头添加“#”。", wx.Colour(0, 51, 204)),
+	("【Export】第一行中，在需要导出列的单元格中，添加“*”，会导出该列对应的key，以加快在代码中查找该key对应的数据。", wx.Colour(36, 36, 36)),
+	("【Key】从第一行开始，直到出现没被注释，且存在值不为空的行，作为所要导出的key。", wx.Colour(0, 51, 240)),
+	("【类型】从Key所在行开始，直到出现没被注释，且存在值不为空的行，作为各列所要导出的数据类型。", wx.Colour(0, 51, 204)),
+	("【数据】从类型所在行开始，出现没被注释，且存在值不为空的行，会导出该行的数据。", wx.Colour(0, 153, 100)),
 ];
 
 class InstructionViewUI(wx.Panel):
@@ -71,5 +70,9 @@ class InstructionViewUI(wx.Panel):
 	
 	def createDesc(self):
 		self.__desc = wx.TextCtrl(self, size = (self.GetSize().x, max(600, self.GetSize().y)), style = wx.TE_READONLY|wx.TE_MULTILINE|wx.TE_RICH);
-		for desc in descriptionConfig:
-			self.__desc.AppendText(f"*{desc}\n");
+		defaultStyle = self.__desc.GetDefaultStyle();
+		for desc, color in descriptionConfig:
+			attr = wx.TextAttr(color);
+			self.__desc.SetDefaultStyle(attr);
+			self.__desc.AppendText(f"{desc}\n");
+		self.__desc.SetDefaultStyle(defaultStyle);
