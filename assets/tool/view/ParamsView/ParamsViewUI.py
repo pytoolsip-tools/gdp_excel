@@ -76,6 +76,10 @@ class ParamsViewUI(wx.Panel):
 			else:
 				tips.SetLabel("- "+ label +" -");
 				tips.SetForegroundColour(wx.Colour(255,36,36));
+			# 更新布局
+			srcDirInputSizer = self.__srcDirInput.GetSizer();
+			if srcDirInputSizer:
+				srcDirInputSizer.Layout();
 			if callable(callback):
 				return callback(value);
 			pass;
@@ -100,11 +104,22 @@ class ParamsViewUI(wx.Panel):
 		tips = wx.StaticText(self.__tgtDirInput, label = "- 输出路径（若为空则默认为上面的输入值） -");
 		tips.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL));
 		tips.SetForegroundColour("gray");
+		# 获取默认的输出路径
+		outputPath = _GG("CacheManager").getCache("selectedOutputPath", "");
+		if not outputPath:
+			outputPath = _GG("CacheManager").getCache("selectedDirPath", "");
+		def onInput(value, callback = None):
+			ret, _ = self.checkDirPath(value);
+			if ret:
+				_GG("CacheManager").setCache("selectedOutputPath", value);
+			if callable(callback):
+				return callback(value);
 		div = DirInputView(self.__tgtDirInput, params = {
 			"inputSize" : (self.contentSize.x - 80, 30),
-			"inputValue" : _GG("CacheManager").getCache("selectedDirPath", ""),
+			"inputValue" : outputPath,
 			"buttonSize" : (80, 30),
 			"buttonLabel" : "选择输出目录",
+			"onInput" : onInput,
 		});
 		# 布局
 		box = wx.BoxSizer(wx.VERTICAL);

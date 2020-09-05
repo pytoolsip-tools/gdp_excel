@@ -36,8 +36,9 @@ class MainViewCtr(object):
 		self.initUI(parent, params); # 初始化视图UI
 		self.registerEventMap(); # 注册事件
 		self.bindBehaviors(); # 绑定组件
-		# 是否正在解析数据
+		# 解析数据的标记
 		self.__isParsing = False;
+		self.__isTryStopParsing = False;
 
 	def __del__(self):
 		self.__dest__();
@@ -104,7 +105,23 @@ class MainViewCtr(object):
 	def updateView(self, data):
 		self.__ui.updateView(data);
 	
+	@property
+	def isParsing(self):
+		return self.__isParsing;
+	
 	def onClickParseButton(self, event):
+		if self.__isTryStopParsing:
+			return;
+		if self.__isParsing:
+			self.tryStopParsing();
+		else:
+			self.doParseData();
+	
+	def doParseData(self):
+		# 重置界面相关UI
+		self.getUI().outputLog(isReset = True);
+		self.setProgress();
+		# 获取解析参数
 		params = self.getUIByKey("ParamsViewCtr").getParams();
 		if not params:
 			self.getUI().showMessageDialog("输入数据有误！");
@@ -113,12 +130,23 @@ class MainViewCtr(object):
 		if not hasattr(self, funcName):
 			self.getUI().showMessageDialog("输入格式不存在！");
 			return;
+		# 开始解析数据
+		self.outputLog("====== 开始数据解析 ======");
 		self.__isParsing = True;
 		# 处理解析逻辑
 		gameDataParser = getattr(self, funcName)(params);
-		gameDataParser.parse(self.outputLog);
-		# 完成解析
+		gameDataParser.parse(logger=self.outputLog, progress=self.setProgress, interrupt=self.checkIsStopParsing, callback=self.stopParsing);
+	
+	def tryStopParsing(self):
+		self.__isTryStopParsing = True;
+
+	def stopParsing(self):
+		self.__isTryStopParsing = False;
 		self.__isParsing = False;
+		self.outputLog("====== 结束数据解析 ======");
+	
+	def checkIsStopParsing(self):
+		return self.__isTryStopParsing or not self.__isParsing;
 
 	def createCsharpGameDataParser(self, params):
 		templatePath = GetPathByRelativePath("../template/csharp", CURRENT_PATH);
@@ -127,3 +155,6 @@ class MainViewCtr(object):
 
 	def outputLog(self, text, style=""):
 		wx.CallAfter(self.getUI().outputLog, text, style);
+		
+	def setProgress(self, val=0):
+		wx.CallAfter(self.getUI().updateGauge, val);

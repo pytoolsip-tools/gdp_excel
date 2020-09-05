@@ -3,6 +3,8 @@ import re;
 import shutil;
 import xlrd;
 import json;
+import hashlib;
+import threading;
 
 class SheetDataParser(object):
 	DEFAULT_DATA_TYPE = "STRING";
@@ -246,31 +248,58 @@ class GameDataParser(object):
 			return hashlib.md5(f.read()).hexdigest();
 		return "";
 
-	def parse(self, logger=None):
+	def parse(self, logger=None, progress=None, interrupt=None, callback=None):
 		if not callable(logger):
 			logger = self.outputLog;
+		threading.Thread(target = self.parseByThread, args = (logger, progress, interrupt, callback)).start();
+	
+	def parseByThread(self, logger=None, progress=None, interrupt=None, callback=None):
 		self.copyTemplate();
 		if not os.path.exists(self.__dirPath):
 			logger(f"Input path[{self.__dirPath}] is not non-existent!", "error");
 			return;
+		newMd5Map = {};
 		md5Map = self.getFileMd5Map();
-		dirPath = self.__dirPath.replace("\\", "/");
+		dirPath = self.__dirPath.replace("\\", "/") + "/";
+		parseFileList = [];
 		for root, _, files in os.walk(self.__dirPath):
 			for fileName in files:
 				fullPath = os.path.join(root, fileName);
 				fileMd5 = self.getMd5ByFilePath(fullPath);
 				relativePath = fullPath.replace("\\", "/").replace(dirPath, "");
 				if md5Map.get(relativePath, "") != fileMd5:
-					dataParser = TableDataParser(fullPath, logger);
-					if dataParser.isValid:
-						logger(f"Try to parse file[{relativePath}]...", "bold");
-						try:
-							self.onParse(dataParser, logger);
-							logger(f"Succeeded to parse file[{relativePath}].", "bold");
-						except Exception as e:
-							logger(f"Failed to parse file[{relativePath}]! Err->{e}", "error");
-					md5Map[relativePath] = fileMd5;
-		self.setFileMd5Map(md5Map);
+					parseFileList.append((fullPath, fileMd5, relativePath));
+				else:
+					newMd5Map[relativePath] = fileMd5;
+		# 遍历需要解析的文件
+		for i, fileInfo in enumerate(parseFileList):
+			# 检测是否中断
+			if callable(interrupt) and interrupt():
+				# 保存MD5并执行完成回调
+				self.setFileMd5Map(newMd5Map);
+				if callable(callback):
+					callback();
+				return;
+			# 解析文件
+			fullPath, fileMd5, relativePath = fileInfo;
+			dataParser = TableDataParser(fullPath, logger);
+			if dataParser.isValid:
+				logger(f"Try to parse file[{relativePath}]...");
+				try:
+					self.onParse(dataParser, logger);
+					logger(f"Succeeded to parse file[{relativePath}].", "bold");
+				except Exception as e:
+					logger(f"Failed to parse file[{relativePath}]! Err->{e}", "error");
+			newMd5Map[relativePath] = fileMd5;
+			# 通知进度
+			if callable(progress):
+				progress((i + 1) / len(parseFileList));
+		if callable(progress):
+			progress(1);  # 完成解析
+		# 保存MD5并执行完成回调
+		self.setFileMd5Map(newMd5Map);
+		if callable(callback):
+			callback();
 
 	def onParse(self, dataParser, logger):
 		pass;

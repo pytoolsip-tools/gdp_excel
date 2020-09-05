@@ -1,4 +1,5 @@
 import os;
+import json;
 
 from function.base import *;
 
@@ -15,7 +16,7 @@ class CsharpGameDataParser(GameDataParser):
 	};
 
 	def __init__(self, dirPath, outputPath, templatePath, collectionsPath):
-		super(GameDataParser, self).__init__(dirPath, outputPath, templatePath);
+		super(CsharpGameDataParser, self).__init__(dirPath, outputPath, templatePath);
 		self.__collectionsPath = collectionsPath;
 
 	def getProperty(self, keyType, key):

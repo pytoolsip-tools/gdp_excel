@@ -65,6 +65,7 @@ class MainViewUI(wx.ScrolledWindow):
 		self.createTitle();
 		self.createParamsView();
 		self.createParseBtn();
+		self.createGauge();
 		self.createOutput();
 		pass;
 		
@@ -73,7 +74,8 @@ class MainViewUI(wx.ScrolledWindow):
 		box.Add(self.__title, flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
 		box.Add(self.getCtr().getUIByKey("ParamsViewCtr"), flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
 		box.Add(self.__parseBtn, flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
-		box.Add(self.__output, flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
+		box.Add(self.__gauge, flag = wx.ALIGN_CENTER|wx.TOP, border = 10);
+		box.Add(self.__output, flag = wx.ALIGN_CENTER|wx.BOTTOM, border = 10);
 		self.SetSizerAndFit(box);
 
 	def resetScrollbars(self):
@@ -99,17 +101,21 @@ class MainViewUI(wx.ScrolledWindow):
 
 	def createParseBtn(self):
 		self.__parseBtn = wx.Button(self, label = "开始解析游戏数据", size = (200, 40));
-		self.__parseBtn.Bind(wx.EVT_BUTTON, self.getCtr().onClickParseButton)
+		self.__parseBtn.Bind(wx.EVT_BUTTON, self.onClickParseButton)
+
+	def createGauge(self):
+		self.__gauge = wx.Gauge(self, size = (self.GetSize()[0], 10), style = wx.GA_SMOOTH);
 
 	def createOutput(self):
 		self.__output = wx.TextCtrl(self, size = (self.GetSize().x, 400), value = "- 解析日志显示区 -", style = wx.TE_READONLY|wx.TE_MULTILINE|wx.TE_RICH);
 		pass;
 	
-	def outputLog(self, text, style = "", isReset=False):
+	def outputLog(self, text="", style="", isReset=False):
 		if isReset:
 			self.__output.SetValue("");
 		if not text:
 			return;
+		text = f">> {text}\n";  # 末尾添加换行
 		attr = None;
 		if style == "normal":
 			attr = wx.TextAttr(wx.Colour(100, 100, 100), font = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL));
@@ -130,3 +136,14 @@ class MainViewUI(wx.ScrolledWindow):
 
 	def showMessageDialog(self, message, caption = "提示", style = wx.OK):
 		return wx.MessageDialog(self, message, caption = caption, style = style).ShowModal();
+	
+	def updateGauge(self, val=0):
+		self.__gauge.SetValue(val * self.__gauge.GetRange());
+	
+	def onClickParseButton(self, event=None):
+		if self.getCtr().isParsing:
+			self.__parseBtn.SetLabel("停止解析游戏数据");
+		else:
+			self.__parseBtn.SetLabel("开始解析游戏数据");
+
+		self.getCtr().onClickParseButton(event);
