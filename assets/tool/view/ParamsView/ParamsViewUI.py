@@ -55,8 +55,8 @@ class ParamsViewUI(wx.Panel):
 	def initViewLayout(self):
 		box = wx.BoxSizer(wx.VERTICAL);
 		box.Add(self.__srcDirInput, flag = wx.ALIGN_CENTER);
-		box.Add(self.__radioBox, flag = wx.ALIGN_CENTER|wx.TOP, border = 5);
 		box.Add(self.__tgtDirInput, flag = wx.ALIGN_CENTER|wx.TOP, border = 5);
+		box.Add(self.__radioBox, flag = wx.ALIGN_CENTER, border = 5);
 		self.SetSizerAndFit(box);
 
 	def updateView(self, data):
@@ -130,7 +130,7 @@ class ParamsViewUI(wx.Panel):
 		self.__tgtDirInput._div = div;
 
 	def createFormatRadioBox(self):
-		self.__radioBox = wx.RadioBox(self, label = "目标格式", choices = self.__params.get("choices", []), style = wx.RA_SPECIFY_COLS);
+		self.__radioBox = wx.RadioBox(self, label = "导出格式", choices = self.__params.get("choices", []), style = wx.RA_SPECIFY_COLS);
 		pass;
 
 	def checkDirPath(self, dirPath):

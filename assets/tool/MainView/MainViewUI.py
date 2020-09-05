@@ -5,18 +5,15 @@
 # @Last Modified time: 2019-03-16 13:46:37
 
 import wx;
-import os;
 
 from _Global import _GG;
 from function.base import *;
-
-from ui import DirInputView;
 
 class MainViewUI(wx.ScrolledWindow):
 	"""docstring for MainViewUI"""
 	def __init__(self, parent, id = -1, curPath = "", viewCtr = None, params = {}):
 		self.initParams(params);
-		super(MainViewUI, self).__init__(parent, id, size = self.__params["size"], style = self.__params["style"]);
+		super(MainViewUI, self).__init__(parent, id, size = self.__params["size"]);
 		self._className_ = MainViewUI.__name__;
 		self._curPath = curPath;
 		self.__viewCtr = viewCtr;
@@ -61,21 +58,14 @@ class MainViewUI(wx.ScrolledWindow):
 		self.resetScrollbars(); # 重置滚动条
 
 	def createControls(self):
-		# self.getCtr().createCtrByKey("key", self._curPath + "***View"); # , parent = self, params = {}
-		self.createTitle();
-		self.createParamsView();
-		self.createParseBtn();
-		self.createGauge();
-		self.createOutput();
+		self.getCtr().createCtrByKey("ContentViewCtr", self._curPath + "../view/ContentView", params = {"size": (max(self.GetSize().x-200, 500), self.GetSize().y)}); # , parent = self
+		self.getCtr().createCtrByKey("InstructionViewCtr", self._curPath + "../view/InstructionView", params = {"size": (200, self.GetSize().y)}); # , parent = self
 		pass;
 		
 	def initViewLayout(self):
-		box = wx.BoxSizer(wx.VERTICAL);
-		box.Add(self.__title, flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
-		box.Add(self.getCtr().getUIByKey("ParamsViewCtr"), flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
-		box.Add(self.__parseBtn, flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
-		box.Add(self.__gauge, flag = wx.ALIGN_CENTER|wx.TOP, border = 10);
-		box.Add(self.__output, flag = wx.ALIGN_CENTER|wx.BOTTOM, border = 10);
+		box = wx.BoxSizer(wx.HORIZONTAL);
+		box.Add(self.getCtr().getUIByKey("ContentViewCtr"));
+		box.Add(self.getCtr().getUIByKey("InstructionViewCtr"));
 		self.SetSizerAndFit(box);
 
 	def resetScrollbars(self):
@@ -88,62 +78,3 @@ class MainViewUI(wx.ScrolledWindow):
 
 	def updateView(self, data):
 		pass;
-
-	def createTitle(self):
-		self.__title = wx.StaticText(self, label = "游戏数据格式解析器——Excel");
-		self.__title.SetFont(wx.Font(20, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD));
-	
-	def createParamsView(self):
-		self.getCtr().createCtrByKey("ParamsViewCtr", self._curPath + "../view/ParamsView", params = {
-			"size" : self.GetSize(),
-			"choices" : list(self.getCtr().CODE_FORMAT_CHOICES.keys()),
-		});
-
-	def createParseBtn(self):
-		self.__parseBtn = wx.Button(self, label = "开始解析游戏数据", size = (200, 40));
-		self.__parseBtn.Bind(wx.EVT_BUTTON, self.onClickParseButton)
-
-	def createGauge(self):
-		self.__gauge = wx.Gauge(self, size = (self.GetSize()[0], 10), style = wx.GA_SMOOTH);
-
-	def createOutput(self):
-		self.__output = wx.TextCtrl(self, size = (self.GetSize().x, 400), value = "- 解析日志显示区 -", style = wx.TE_READONLY|wx.TE_MULTILINE|wx.TE_RICH);
-		pass;
-	
-	def outputLog(self, text="", style="", isReset=False):
-		if isReset:
-			self.__output.SetValue("");
-		if not text:
-			return;
-		text = f">> {text}\n";  # 末尾添加换行
-		attr = None;
-		if style == "normal":
-			attr = wx.TextAttr(wx.Colour(100, 100, 100), font = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL));
-		elif style == "bold":
-			attr = wx.TextAttr(wx.Colour(0, 0, 0), font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD));
-		elif style == "error":
-			attr = wx.TextAttr(wx.Colour(255, 0, 0), font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD));
-		elif style == "warning":
-			attr = wx.TextAttr(wx.Colour(218,165,32), font = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD));
-		# 添加富文本
-		if attr:
-			defaultStyle = self.__output.GetDefaultStyle();
-			self.__output.SetDefaultStyle(attr);
-			self.__output.AppendText(text);
-			self.__output.SetDefaultStyle(defaultStyle);
-		else:
-			self.__output.AppendText(text);
-
-	def showMessageDialog(self, message, caption = "提示", style = wx.OK):
-		return wx.MessageDialog(self, message, caption = caption, style = style).ShowModal();
-	
-	def updateGauge(self, val=0):
-		self.__gauge.SetValue(val * self.__gauge.GetRange());
-	
-	def onClickParseButton(self, event=None):
-		if self.getCtr().isParsing:
-			self.__parseBtn.SetLabel("停止解析游戏数据");
-		else:
-			self.__parseBtn.SetLabel("开始解析游戏数据");
-
-		self.getCtr().onClickParseButton(event);

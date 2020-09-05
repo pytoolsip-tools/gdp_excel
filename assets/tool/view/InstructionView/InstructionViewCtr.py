@@ -1,30 +1,26 @@
 # -*- coding: utf-8 -*-
-# @Author: JimZhang
-# @Date:   2018-10-08 21:02:23
-# @Last Modified by:   JimDreamHeart
-# @Last Modified time: 2019-03-16 13:46:35
+# @Author: zhangjin09
+# @Date:   2020-09-05 16:16:01
+# @Last Modified by:   zhangjin09
+# @Last Modified time: 2020-09-05 16:16:01
 import os;
 import wx;
 
 from _Global import _GG;
 
-from MainViewUI import *;
-
-CURRENT_PATH = os.path.dirname(os.path.realpath(__file__)); # 当前文件目录
-
-require(GetPathByRelativePath("../", CURRENT_PATH), "_loadtool"); # 加载工具配置
+from InstructionViewUI import *;
 
 def getRegisterEventMap(G_EVENT):
 	return {
 		# G_EVENT.TO_UPDATE_VIEW : "updateView",
 	};
 
-class MainViewCtr(object):
-	"""docstring for MainViewCtr"""
+class InstructionViewCtr(object):
+	"""docstring for InstructionViewCtr"""
 	def __init__(self, parent, params = {}):
-		super(MainViewCtr, self).__init__();
-		self._className_ = MainViewCtr.__name__;
-		self._curPath = CURRENT_PATH.replace("\\", "/") + "/";
+		super(InstructionViewCtr, self).__init__();
+		self._className_ = InstructionViewCtr.__name__;
+		self._curPath = os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/";
 		self.__CtrMap = {}; # 所创建的控制器
 		self.initUI(parent, params); # 初始化视图UI
 		self.registerEventMap(); # 注册事件
@@ -50,7 +46,7 @@ class MainViewCtr(object):
 
 	def initUI(self, parent, params):
 		# 创建视图UI类
-		self.__ui = MainViewUI(parent, curPath = self._curPath, viewCtr = self, params = params);
+		self.__ui = InstructionViewUI(parent, curPath = self._curPath, viewCtr = self, params = params);
 		self.__ui.initView();
 
 	def getUI(self):

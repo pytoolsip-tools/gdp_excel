@@ -90,7 +90,10 @@ class SheetDataParser(object):
 	def checkIsAnnotated(row):
 		if re.search(r"^#.*", str(row[0])):
 			return True;
-		return False;
+		for val in row:
+			if val:
+				return False;
+		return True;
 	
 	def getTypeByKey(self, key):
 		return self.__typeDict.get(key, self.DEFAULT_DATA_TYPE);
@@ -195,7 +198,7 @@ class TableDataParser(object):
 			sheetData = SheetDataParser(self.__workbook.sheet_by_index(self.__iterIndex));
 			self.__iterIndex += 1;
 			if not sheetData.isValid:
-				self.__logger(f"Invalid sheet data[{sheetData.sheet.name}]! Err-> {e}", "warning");
+				self.__logger(f"Invalid sheet data[{sheetData.sheet.name}]!", "warning");
 				return self.__next__();
 			return sheetData;
 		else:
