@@ -209,7 +209,7 @@ class TableDataParser(object):
 		return iter(self);
 
 class GameDataParser(object):
-	MD5_MAP_FILE_NAME = "_excel_file_md5_map_";
+	MD5_MAP_FILE_NAME = "_excel_data_cache_map";
 
 	def __init__(self, dirPath, outputPath, templatePath):
 		super(GameDataParser, self).__init__();
@@ -232,17 +232,17 @@ class GameDataParser(object):
 			elif os.path.isfile(fullPath):
 				shutil.copy(fullPath, self.__outputPath);
 	
-	def getFileMd5Map(self):
+	def getDataCacheMap(self):
 		md5MapPath = os.path.join(self.__outputPath, self.MD5_MAP_FILE_NAME+".json");
 		if os.path.exists(md5MapPath):
 			with open(md5MapPath, "r") as f:
 				return json.loads(f.read());
 		return {};
 		
-	def setFileMd5Map(self, md5Map={}):
+	def setDataCacheMap(self, cacheMap={}):
 		md5MapPath = os.path.join(self.__outputPath, self.MD5_MAP_FILE_NAME+".json");
 		with open(md5MapPath, "w") as f:
-			f.write(json.dumps(md5Map));
+			f.write(json.dumps(cacheMap));
 
 	def getMd5ByFilePath(self, filePath):
 		if not os.path.exists(filePath):
@@ -262,7 +262,7 @@ class GameDataParser(object):
 			logger(f"Input path[{self.__dirPath}] is not non-existent!", "error");
 			return;
 		newMd5Map = {};
-		md5Map = self.getFileMd5Map();
+		md5Map = self.getDataCacheMap();
 		dirPath = self.__dirPath.replace("\\", "/") + "/";
 		parseFileList = [];
 		for root, _, files in os.walk(self.__dirPath):
@@ -270,16 +270,19 @@ class GameDataParser(object):
 				fullPath = os.path.join(root, fileName);
 				fileMd5 = self.getMd5ByFilePath(fullPath);
 				relativePath = fullPath.replace("\\", "/").replace(dirPath, "");
-				if md5Map.get(relativePath, "") != fileMd5:
-					parseFileList.append((fullPath, fileMd5, relativePath));
+				if relativePath in md5Map and md5Map[relativePath].get("md5", "") == fileMd5:
+					newMd5Map[relativePath] = md5Map[relativePath];
+					data = md5Map[relativePath].get("data", "");
+					if data:
+						self.onSaveData(data);
 				else:
-					newMd5Map[relativePath] = fileMd5;
+					parseFileList.append((fullPath, fileMd5, relativePath));
 		# 遍历需要解析的文件
 		for i, fileInfo in enumerate(parseFileList):
 			# 检测是否中断
 			if callable(interrupt) and interrupt():
 				# 保存MD5并执行完成回调
-				self.setFileMd5Map(newMd5Map);
+				self.setDataCacheMap(newMd5Map);
 				if callable(callback):
 					callback();
 				return;
@@ -288,21 +291,31 @@ class GameDataParser(object):
 			dataParser = TableDataParser(fullPath, logger);
 			if dataParser.isValid:
 				logger(f"Try to parse file[{relativePath}]...");
+				content = "";
 				try:
-					self.onParse(dataParser, logger);
+					for sheet in dataParser.sheets:
+						if not sheet.isValid:
+							continue;
+						data = self.onParse(sheet, logger);
+						self.onSaveData(data);
+						content += data;
+						logger(f"Succeeded to parse sheet[{sheet.name}].");
 					logger(f"Succeeded to parse file[{relativePath}].", "bold");
 				except Exception as e:
 					logger(f"Failed to parse file[{relativePath}]! Err->{e}", "error");
-			newMd5Map[relativePath] = fileMd5;
+				newMd5Map[relativePath] = {"md5": fileMd5, "data": content};
 			# 通知进度
 			if callable(progress):
 				progress((i + 1) / len(parseFileList));
 		if callable(progress):
 			progress(1);  # 完成解析
 		# 保存MD5并执行完成回调
-		self.setFileMd5Map(newMd5Map);
+		self.setDataCacheMap(newMd5Map);
 		if callable(callback):
 			callback();
+	
+	def onSaveData(self, data):
+		pass;
 
 	def onParse(self, dataParser, logger):
 		pass;

@@ -2,7 +2,16 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 
-class GameData {
+public class GameData {
+    static GameData m_data;
+    public static GameData Instance {
+        get {
+            if (m_data == null) {
+                m_data = new GameData();
+            }
+            return m_data;
+        }
+    }
     
     public T Get<T>(object val) {
         return single<T>("Get", val);

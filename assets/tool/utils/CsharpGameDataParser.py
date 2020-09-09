@@ -45,15 +45,14 @@ public class {className} : TableRowData {{
 
 """
 
-	def onParse(self, dataParser, logger):
+	def onSaveData(self, data):
 		with open(self.__collectionsPath, "a+") as f:
-			for sheet in dataParser.sheets:
-				if not sheet.isValid:
-					continue;
-				properties = [];
-				for key in sheet.keyList:
-					properties.append(self.getProperty(sheet.getTypeByKey(key), key));
-				template = self.getTemplate(sheet.name, "\n".join(properties),
-					json.dumps(sheet.keyList), json.dumps(sheet.exportKeyList), json.dumps(sheet.valList));
-				# 追加
-				f.write(template);
+			f.write(data);  # 追加
+
+	def onParse(self, sheet, logger):
+		properties = [];
+		for key in sheet.keyList:
+			properties.append(self.getProperty(sheet.getTypeByKey(key), key));
+		template = self.getTemplate(sheet.name, "\n".join(properties),
+			json.dumps(sheet.keyList), json.dumps(sheet.exportKeyList), json.dumps(sheet.valList));
+		return template;
