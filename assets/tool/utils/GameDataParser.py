@@ -254,13 +254,16 @@ class GameDataParser(object):
 	def parse(self, logger=None, progress=None, interrupt=None, callback=None):
 		if not callable(logger):
 			logger = self.outputLog;
-		threading.Thread(target = self.parseByThread, args = (logger, progress, interrupt, callback)).start();
+		threading.Thread(target = self.__parseByThread__, args = (logger, progress, interrupt, callback)).start();
 	
-	def parseByThread(self, logger=None, progress=None, interrupt=None, callback=None):
+	def __parseByThread__(self, logger=None, progress=None, interrupt=None, callback=None):
 		self.copyTemplate();
 		if not os.path.exists(self.__dirPath):
 			logger(f"Input path[{self.__dirPath}] is not non-existent!", "error");
 			return;
+		# 开始回调
+		self.onStartParse();
+		# 解析数据
 		newMd5Map = {};
 		md5Map = self.getDataCacheMap();
 		dirPath = self.__dirPath.replace("\\", "/") + "/";
@@ -274,17 +277,18 @@ class GameDataParser(object):
 					newMd5Map[relativePath] = md5Map[relativePath];
 					data = md5Map[relativePath].get("data", "");
 					if data:
-						self.onSaveData(data);
+						try:
+							self.onSaveData(data);
+						except Exception as e:
+							logger(f"Failed to save data[{relativePath}]! Err->{e}", "error");
 				else:
 					parseFileList.append((fullPath, fileMd5, relativePath));
 		# 遍历需要解析的文件
 		for i, fileInfo in enumerate(parseFileList):
 			# 检测是否中断
 			if callable(interrupt) and interrupt():
-				# 保存MD5并执行完成回调
-				self.setDataCacheMap(newMd5Map);
-				if callable(callback):
-					callback();
+				# 完成回调
+				self.__onComplete__(newMd5Map, callback);
 				return;
 			# 解析文件
 			fullPath, fileMd5, relativePath = fileInfo;
@@ -309,10 +313,21 @@ class GameDataParser(object):
 				progress((i + 1) / len(parseFileList));
 		if callable(progress):
 			progress(1);  # 完成解析
+		# 完成回调
+		self.__onComplete__(newMd5Map, callback);
+	
+	def __onComplete__(self, newMd5Map, callback):
 		# 保存MD5并执行完成回调
 		self.setDataCacheMap(newMd5Map);
 		if callable(callback):
 			callback();
+		self.onComplete();
+	
+	def onStartParse(self):
+		pass;
+	
+	def onComplete(self):
+		pass;
 	
 	def onSaveData(self, data):
 		pass;
