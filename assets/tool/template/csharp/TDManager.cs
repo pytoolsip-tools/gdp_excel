@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 
-namespace TD {
+namespace DH.TD {
     public class TDManager {
         static TDManager m_data;
         public static TDManager Instance {
@@ -14,32 +14,32 @@ namespace TD {
             }
         }
         
-        public T Get<T>(object val) {
-            return single<T>("Get", val);
+        public static T Get<T>(object val) {
+            return TDManager.Instance.single<T>("Get", val);
         }
-        public T Get<T>(object val, string key) {
-            return single<T>("Get", val, key);
-        }
-        
-        public T Find<T>(object val) {
-            return single<T>("Find", val);
-        }
-        public T Find<T>(object val, string key) {
-            return single<T>("Find", val, key);
+        public static T Get<T>(object val, string key) {
+            return TDManager.Instance.single<T>("Get", val, key);
         }
         
-        public T[] GetAll<T>(object val) {
-            return multiple<T>("GetAll", val);
+        public static T Find<T>(object val) {
+            return TDManager.Instance.single<T>("Find", val);
         }
-        public T[] GetAll<T>(object val, string key) {
-            return multiple<T>("GetAll", val, key);
+        public static T Find<T>(object val, string key) {
+            return TDManager.Instance.single<T>("Find", val, key);
         }
         
-        public T[] FindAll<T>(object val) {
-            return multiple<T>("FindAll", val);
+        public static T[] GetAll<T>(object val) {
+            return TDManager.Instance.multiple<T>("GetAll", val);
         }
-        public T[] FindAll<T>(object val, string key) {
-            return multiple<T>("FindAll", val, key);
+        public static T[] GetAll<T>(object val, string key) {
+            return TDManager.Instance.multiple<T>("GetAll", val, key);
+        }
+        
+        public static T[] FindAll<T>(object val) {
+            return TDManager.Instance.multiple<T>("FindAll", val);
+        }
+        public static T[] FindAll<T>(object val, string key) {
+            return TDManager.Instance.multiple<T>("FindAll", val, key);
         }
 
         // 校验参数

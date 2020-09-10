@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace TD {
+namespace DH.TD {
 
     public class TemplateRowTD : TableRowData {
         public Int64 id;

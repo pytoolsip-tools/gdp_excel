@@ -51,7 +51,7 @@ class CsharpGameDataParser(GameDataParser):
 using System;
 using System.Collections.Generic;
 
-namespace TD {
+namespace DH.TD {
 """);
 
 	def onComplete(self):
