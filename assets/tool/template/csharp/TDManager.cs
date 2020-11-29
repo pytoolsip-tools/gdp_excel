@@ -42,6 +42,10 @@ namespace DH.TD {
             return TDManager.Instance.multiple<T>("FindAll", val, key);
         }
 
+        public static T[] All<T>() {
+            return TDManager.Instance.multipleWithoutArgs<T>("All");
+        }
+
         // 校验参数
         bool verifyArgs(object obj, ref object[] args) {
             if (args.Length == 0) {
@@ -55,14 +59,14 @@ namespace DH.TD {
         }
 
         // 获取TableData
-        object getTableData<T>(ref object[] args) {
+        object getTableData<T>(ref object[] args, bool isVerifyArgs=true) {
             Type dataType = typeof(T);
             MethodInfo methodInfo = dataType.GetMethod("TableData");
             if (methodInfo == null) {
                 return null;
             }
             var obj = methodInfo.Invoke(null, null);
-            if (!verifyArgs(obj, ref args)) {
+            if (isVerifyArgs && !verifyArgs(obj, ref args)) {
                 return null;
             }
             return obj;
@@ -78,6 +82,14 @@ namespace DH.TD {
         
         T[] multiple<T>(string method, params object[] args) {
             var obj = getTableData<T>(ref args);
+            if (obj == null) {
+                return new T[0];
+            }
+            return (T[]) obj.GetType().GetMethod(method).Invoke(obj, args);
+        }
+
+        T[] multipleWithoutArgs<T>(string method, params object[] args) {
+            var obj = getTableData<T>(ref args, false);
             if (obj == null) {
                 return new T[0];
             }
@@ -249,6 +261,10 @@ namespace DH.TD {
                 }
             }
             return rowList.ToArray();
+        }
+
+        public T[] All() {
+            return m_data.ToArray();
         }
     }
 }
