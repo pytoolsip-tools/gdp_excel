@@ -122,6 +122,14 @@ namespace DH.TD {
                 return fieldInfo.GetValue(this);
             }
         }
+
+        public T GetVal<T>(string name) {
+            object obj = this[name];
+            if (obj == null) {
+                return default(T);
+            }
+            return (T) obj;
+        }
         
     }
 
