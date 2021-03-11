@@ -131,6 +131,46 @@ namespace DH.TD {
             return (T) obj;
         }
         
+        public List<T> GetValList<T>(string name, int count, bool isIncludeNull=false) {
+            List<T> valList = new List<T>();
+            object obj;
+            for (int i = 0; i < count; i++) {
+                obj = this[string.Format("{0}_{1}", name, i+1)];
+                if (obj != null) {
+                    valList.Add(default(T));
+                } else if (isIncludeNull) {
+                    valList.Add((T) obj);
+                }
+            }
+            return valList;
+        }
+
+        public Dictionary<Int64,T> GetIntKeyDict<T>(string keyName, string valName, int count) {
+            Dictionary<Int64,T> valDict = new Dictionary<Int64,T>();
+            object keyObj, valObj;
+            for (int i = 0; i < count; i++) {
+                keyObj = this[string.Format("{0}_{1}", keyName, i+1)];
+                valObj = this[string.Format("{0}_{1}", valName, i+1)];
+                if (keyObj != null && valObj != null) {
+                    valDict[(Int64) keyObj] = (T) valObj;
+                }
+            }
+            return valDict;
+        }
+
+        public Dictionary<string,T> GetStrKeyDict<T>(string keyName, string valName, int count) {
+            Dictionary<string,T> valDict = new Dictionary<string,T>();
+            object keyObj, valObj;
+            for (int i = 0; i < count; i++) {
+                keyObj = this[string.Format("{0}_{1}", keyName, i+1)];
+                valObj = this[string.Format("{0}_{1}", valName, i+1)];
+                if (keyObj != null && valObj != null) {
+                    valDict[(string) keyObj] = (T) valObj;
+                }
+            }
+            return valDict;
+        }
+
     }
 
     public class TableData<T> where T:TableRowData {
