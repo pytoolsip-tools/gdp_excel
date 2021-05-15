@@ -133,8 +133,11 @@ class ContentViewCtr(object):
 		self.__isParsing = True;
 		# 处理解析逻辑
 		gameDataParser = getattr(self, funcName)(params);
-		gameDataParser.parse(logger=self.outputLog, progress=self.setProgress, interrupt=self.checkIsStopParsing, callback=self.stopParsing);
+		gameDataParser.parse(logger=self.outputLog, progress=self.setProgress, interrupt=self.checkIsStopParsing, callback=self.stopParsing, isUseCache=self.checkIsUseCache());
 	
+	def checkIsUseCache(self):
+		return self.getUI().isUseCache();
+
 	def tryStopParsing(self):
 		self.__isTryStopParsing = True;
 

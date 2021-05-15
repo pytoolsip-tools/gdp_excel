@@ -251,12 +251,12 @@ class GameDataParser(object):
 			return hashlib.md5(f.read()).hexdigest();
 		return "";
 
-	def parse(self, logger=None, progress=None, interrupt=None, callback=None):
+	def parse(self, logger=None, progress=None, interrupt=None, callback=None, isUseCache=True):
 		if not callable(logger):
 			logger = self.outputLog;
-		threading.Thread(target = self.__parseByThread__, args = (logger, progress, interrupt, callback)).start();
+		threading.Thread(target = self.__parseByThread__, args = (logger, progress, interrupt, callback, isUseCache)).start();
 	
-	def __parseByThread__(self, logger=None, progress=None, interrupt=None, callback=None):
+	def __parseByThread__(self, logger=None, progress=None, interrupt=None, callback=None, isUseCache=True):
 		self.copyTemplate();
 		if not os.path.exists(self.__dirPath):
 			logger(f"Input path[{self.__dirPath}] is not non-existent!", "error");
@@ -265,7 +265,9 @@ class GameDataParser(object):
 		self.onStartParse();
 		# 解析数据
 		newMd5Map = {};
-		md5Map = self.getDataCacheMap();
+		md5Map = {};
+		if isUseCache:
+			md5Map = self.getDataCacheMap();
 		dirPath = self.__dirPath.replace("\\", "/") + "/";
 		parseFileList = [];
 		for root, _, files in os.walk(self.__dirPath):

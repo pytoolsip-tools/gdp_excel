@@ -20,8 +20,7 @@ class CsharpGameDataParser(GameDataParser):
 		self.__collectionsPath = collectionsPath;
 
 	def getProperty(self, keyType, key):
-		return f"""		{self.DATA_TYPE_CONFIG[keyType]} m_{key};
-		public {self.DATA_TYPE_CONFIG[keyType]} {key} {{get {{return m_{key};}}}}\n"""
+		return f"""		public {self.DATA_TYPE_CONFIG[keyType]} {key};"""
 
 	def getTemplate(self, className, properties, keyJson, exportKeyJson, valJson):
 		keyJson = keyJson.replace("\"", "\\\"");

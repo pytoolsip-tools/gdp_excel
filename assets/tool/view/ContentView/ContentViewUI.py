@@ -39,6 +39,7 @@ class ContentViewUI(wx.Panel):
 		# self.getCtr().createCtrByKey("key", self._curPath + "***View"); # , parent = self, params = {}
 		self.createTitle();
 		self.createParamsView();
+		self.createClearCacheBox();
 		self.createParseBtn();
 		self.createGauge();
 		self.createOutput();
@@ -48,6 +49,7 @@ class ContentViewUI(wx.Panel):
 		box = wx.BoxSizer(wx.VERTICAL);
 		box.Add(self.__title, flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
 		box.Add(self.getCtr().getUIByKey("ParamsViewCtr"), flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
+		box.Add(self.__useCacheBox, flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
 		box.Add(self.__parseBtn, flag = wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border = 10);
 		box.Add(self.__gauge, flag = wx.ALIGN_CENTER|wx.BOTTOM, border = 10);
 		box.Add(self.__output, flag = wx.ALIGN_CENTER|wx.BOTTOM, border = 10);
@@ -65,6 +67,10 @@ class ContentViewUI(wx.Panel):
 			"size" : self.GetSize(),
 			"choices" : list(self.getCtr().CODE_FORMAT_CHOICES.keys()),
 		});
+
+	def createClearCacheBox(self):
+		self.__useCacheBox = wx.CheckBox(self, label = "使用旧解析数据缓存");
+		self.__useCacheBox.SetValue(True);  # 默认使用缓存
 
 	def createParseBtn(self):
 		self.__parseBtn = wx.Button(self, label = "开始解析游戏数据", size = (200, 40));
@@ -114,3 +120,6 @@ class ContentViewUI(wx.Panel):
 			self.__parseBtn.SetLabel("开始解析游戏数据");
 
 		self.getCtr().onClickParseButton(event);
+	
+	def isUseCache(self):
+		return self.__useCacheBox.GetValue();
