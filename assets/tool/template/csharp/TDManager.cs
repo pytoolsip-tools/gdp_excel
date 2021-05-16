@@ -257,8 +257,8 @@ namespace DH.TD {
                 if (m_dataMap[key].ContainsKey(val)) {
                     List<int> indexList = m_dataMap[key][val];
                     if (indexList.Count > 0) {
-                        foreach (int i in indexList) {
-                            rowList.Add(m_data[indexList[i]]);
+                        foreach (int idx in indexList) {
+                            rowList.Add(m_data[idx]);
                         }
                     }
                 }
