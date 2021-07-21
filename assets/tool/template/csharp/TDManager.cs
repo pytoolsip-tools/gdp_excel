@@ -152,10 +152,10 @@ namespace DH.TD {
             object obj;
             for (int i = 0; i < count; i++) {
                 obj = this[string.Format("{0}_{1}", name, i+1)];
-                if (obj == null) {
-                    valList.Add(default(T));
-                } else if (isIncludeNull) {
+                if (obj != null) {
                     valList.Add((T) obj);
+                } else if (isIncludeNull) {
+                    valList.Add(default(T));
                 }
             }
             return valList;
