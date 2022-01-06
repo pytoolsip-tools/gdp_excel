@@ -79,7 +79,7 @@ class SheetDataParser(object):
 			for idx in idxList:
 				key = self.__keyDict[idx];
 				typeFunc = self.DATA_TYPE_DICT[self.getTypeByKey(key)]["func"];
-				if not row[idx]:
+				if isinstance(row[idx], str) and not row[idx]:
 					val.append(self.getDefaultByKey(key));
 				else:
 					val.append(typeFunc(row[idx]));
