@@ -147,16 +147,23 @@ namespace DH.TD {
             return kvList;
         }
 
-        public List<T> GetValList<T>(string name, int count, bool isIncludeNull=false) {
+        public List<T> GetValList<T>(string name, int count, T excludeVal) {
+            return this.GetValList(name, count, new List<T>{excludeVal});
+        }
+
+        public List<T> GetValList<T>(string name, int count, List<T> excludeValList=null) {
             List<T> valList = new List<T>();
             object obj;
             for (int i = 0; i < count; i++) {
                 obj = this[string.Format("{0}_{1}", name, i+1)];
-                if (obj != null) {
-                    valList.Add((T) obj);
-                } else if (isIncludeNull) {
-                    valList.Add(default(T));
+                if (obj == null) {
+                    continue;
                 }
+                T val = (T) obj;
+                if (excludeValList != null && excludeValList.Contains(val)) {
+                    continue;
+                }
+                valList.Add(val);
             }
             return valList;
         }
