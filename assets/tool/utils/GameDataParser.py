@@ -82,7 +82,7 @@ class SheetDataParser(object):
 				if isinstance(row[idx], str) and not row[idx]:
 					val.append(self.getDefaultByKey(key));
 				else:
-					val.append(typeFunc(row[idx]));
+					val.append(typeFunc(self.convertVal(row[idx])));
 			valList.append(val);
 		return valList;
 
@@ -94,6 +94,12 @@ class SheetDataParser(object):
 			if val:
 				return False;
 		return True;
+
+	@staticmethod
+	def convertVal(val):
+		if isinstance(val, float) and int(val) == val:
+			return int(val)
+		return val
 	
 	def getTypeByKey(self, key):
 		return self.__typeDict.get(key, self.DEFAULT_DATA_TYPE);
