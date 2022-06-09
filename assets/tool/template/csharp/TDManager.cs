@@ -131,14 +131,31 @@ namespace DH.TD {
             return (T) obj;
         }
 
-        public List<object[]> GetKvList(string keyName, string ValName, int count) {
+        public List<object[]> GetKvsList(string keyName, string[] valNames, int count) {
             List<object[]> kvList = new List<object[]>();
             for (int i = 0; i < count; i++) {
                 object keyObj = this[string.Format("{0}_{1}", keyName, i+1)];
                 if (keyObj == null) {
                     continue;
                 }
-                object valObj = this[string.Format("{0}_{1}", ValName, i+1)];
+                object[] kvs = new object[valNames.Length + 1];
+                kvs[0] = keyObj;
+                for (int vi = 0; vi < valNames.Length; vi++) {
+                    kvs[vi + 1] = this[string.Format("{0}_{1}", valNames[vi], i+1)];
+                }
+                kvList.Add(kvs);
+            }
+            return kvList;
+        }
+
+        public List<object[]> GetKvList(string keyName, string valName, int count) {
+            List<object[]> kvList = new List<object[]>();
+            for (int i = 0; i < count; i++) {
+                object keyObj = this[string.Format("{0}_{1}", keyName, i+1)];
+                if (keyObj == null) {
+                    continue;
+                }
+                object valObj = this[string.Format("{0}_{1}", valName, i+1)];
                 if (valObj == null) {
                     continue;
                 }
