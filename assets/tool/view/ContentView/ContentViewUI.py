@@ -69,7 +69,7 @@ class ContentViewUI(wx.Panel):
 		});
 
 	def createClearCacheBox(self):
-		self.__useCacheBox = wx.CheckBox(self, label = "使用旧解析数据缓存");
+		self.__useCacheBox = wx.CheckBox(self, label = "是否使用缓存解析数据");
 		self.__useCacheBox.SetValue(True);  # 默认使用缓存
 
 	def createParseBtn(self):

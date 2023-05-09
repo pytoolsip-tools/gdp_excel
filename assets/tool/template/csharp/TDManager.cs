@@ -4,13 +4,13 @@ using System.Collections.Generic;
 
 namespace DH.TD {
     public class TDManager {
-        static TDManager m_data;
+        static TDManager m_instance;
         public static TDManager Instance {
             get {
-                if (m_data == null) {
-                    m_data = new TDManager();
+                if (m_instance == null) {
+                    m_instance = new TDManager();
                 }
-                return m_data;
+                return m_instance;
             }
         }
         
@@ -99,20 +99,6 @@ namespace DH.TD {
     }
 
     public class TableRowData {
-        public void Init(object[] args, string[] keyList) {
-            for (int i = 0; i < keyList.Length; i++) {
-                if (i >= args.Length) {
-                    break;
-                }
-                string key = keyList[i];
-                FieldInfo field = GetType().GetField(key);
-                if (field == null) {
-                    continue;
-                }
-                field.SetValue(this, args[i]);
-            }
-        }
-
         public object this[string name]{
             get{
                 FieldInfo fieldInfo = GetType().GetField(name);
@@ -190,55 +176,25 @@ namespace DH.TD {
     public class TableData<T> where T:TableRowData {
         Dictionary<string, Dictionary<object, List<int>>> m_dataMap = new Dictionary<string, Dictionary<object, List<int>>>();
 
-        List<T> m_data = new List<T>();
+        List<T> m_dataList = new List<T>();
 
         string m_defaultKey = "id";
-        string[] m_keyList = new string[0];
-        string[] m_exportKeyList = new string[0];
+        string[] m_exportKeys = new string[0];
 
         public string DefaultKey {
             get { return m_defaultKey; }
         }
 
-        public TableData(string keyJson, string exportKeyJson, string valJson) {
-            initKey(keyJson, exportKeyJson);
-            initVal(valJson);
-        }
-
-        void initKey(string keyJson, string exportKeyJson) {
-            // 解析key列表
-            List<object> keyList = MiniJSON.Json.Deserialize(keyJson) as List<object>;
-            if (keyList != null) {
-                m_keyList = new string[keyList.Count];
-                keyList.CopyTo(m_keyList);
-            }
-            // 解析导出的key列表
-            List<object> exportKeyList = MiniJSON.Json.Deserialize(exportKeyJson) as List<object>;
-            if (exportKeyList != null) {
-                m_exportKeyList = new string[exportKeyList.Count];
-                exportKeyList.CopyTo(m_exportKeyList);
-            }
-            // 设置默认key值
-            if (m_exportKeyList.Length > 0) {
-                m_defaultKey = m_exportKeyList[0];
-            } else if (m_keyList.Length > 0) {
-                m_defaultKey = m_keyList[0];
-            }
-        }
-
-        void initVal(string valJson) {
-            List<object> valList = MiniJSON.Json.Deserialize(valJson) as List<object>;
-            foreach (List<object> val in valList) {
-                T data = Activator.CreateInstance<T>();
-                data.Init(val.ToArray(), m_keyList);
-                m_data.Add(data);
-                // 加入到dataMap
-                addToDataMap(data, m_data.Count - 1);
+        public TableData(string[] exportKeys, T[] datas) {
+            m_exportKeys = exportKeys;
+            foreach (T data in datas) {
+                m_dataList.Add(data);
+                addToDataMap(data, m_dataList.Count - 1);
             }
         }
 
         void addToDataMap(T data, int index) {
-            foreach (string exportKey in m_exportKeyList) {
+            foreach (string exportKey in m_exportKeys) {
                 if (!m_dataMap.ContainsKey(exportKey)) {
                     m_dataMap[exportKey] = new Dictionary<object, List<int>>();
                 }
@@ -268,7 +224,7 @@ namespace DH.TD {
                 if (m_dataMap[key].ContainsKey(val)) {
                     List<int> indexList = m_dataMap[key][val];
                     if (indexList.Count > 0) {
-                        return m_data[indexList[0]];
+                        return m_dataList[indexList[0]];
                     }
                 }
             }
@@ -282,7 +238,7 @@ namespace DH.TD {
                     List<int> indexList = m_dataMap[key][val];
                     if (indexList.Count > 0) {
                         foreach (int idx in indexList) {
-                            rowList.Add(m_data[idx]);
+                            rowList.Add(m_dataList[idx]);
                         }
                     }
                 }
@@ -297,12 +253,12 @@ namespace DH.TD {
                 return rowData;
             }
             val = verifyType(val);  // 校验类型
-            for (int i = 0; i < m_data.Count; i++) {
-                if (m_data[i][key] == null) {
+            for (int i = 0; i < m_dataList.Count; i++) {
+                if (m_dataList[i][key] == null) {
                     break;
                 }
-                if (m_data[i][key] == val) {
-                    return m_data[i];
+                if (m_dataList[i][key] == val) {
+                    return m_dataList[i];
                 }
             }
             return null;
@@ -314,19 +270,19 @@ namespace DH.TD {
             }
             List<T> rowList = new List<T>();
             val = verifyType(val);  // 校验类型
-            for (int i = 0; i < m_data.Count; i++) {
-                if (m_data[i][key] == null) {
+            for (int i = 0; i < m_dataList.Count; i++) {
+                if (m_dataList[i][key] == null) {
                     break;
                 }
-                if (m_data[i][key] == val) {
-                    rowList.Add(m_data[i]);
+                if (m_dataList[i][key] == val) {
+                    rowList.Add(m_dataList[i]);
                 }
             }
             return rowList.ToArray();
         }
 
         public T[] All() {
-            return m_data.ToArray();
+            return m_dataList.ToArray();
         }
     }
 }

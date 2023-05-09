@@ -6,6 +6,18 @@ import json;
 import hashlib;
 import threading;
 
+
+def ConvertListData(dataStr, typeFunc):
+	dataList = [];
+	try:
+		dataStr = dataStr.strip();
+		if dataStr:
+			dataList = json.loads(dataStr);
+	except Exception:
+		pass
+	return [typeFunc(data) for data in dataList];
+
+
 class SheetDataParser(object):
 	DEFAULT_DATA_TYPE = "STRING";
 	DATA_TYPE_DICT = {
@@ -13,6 +25,10 @@ class SheetDataParser(object):
 		"INT" : {"func": lambda s: int(s), "default": 0},
 		"BOOL" : {"func": lambda s: bool(s), "default": False},
 		"FLOAT" : {"func": lambda s: float(s), "default": 0},
+		"LIST<STRING>" : {"func": lambda s: ConvertListData(s, str), "default": []},
+		"LIST<INT>" : {"func": lambda s: ConvertListData(s, int), "default": []},
+		"LIST<BOOL>" : {"func": lambda s: ConvertListData(s, bool), "default": []},
+		"LIST<FLOAT>" : {"func": lambda s: ConvertListData(s, float), "default": []},
 	};
 
 	def __init__(self, sheet):
@@ -98,8 +114,8 @@ class SheetDataParser(object):
 	@staticmethod
 	def convertVal(val):
 		if isinstance(val, float) and int(val) == val:
-			return int(val)
-		return val
+			return int(val);  # 为了解决整数转字符串有误问题
+		return val;
 	
 	def getTypeByKey(self, key):
 		return self.__typeDict.get(key, self.DEFAULT_DATA_TYPE);
@@ -144,7 +160,7 @@ class SheetDataParser(object):
 					if not isinstance(row[i], str):
 						continue;
 					typeStrip = row[i].strip();
-					ret = re.search("([a-zA-Z]+)\((.*)\)", typeStrip);
+					ret = re.search("([a-zA-Z<>]+)\((.*)\)", typeStrip);
 					if not ret:
 						typeStr = typeStrip.upper();
 						if typeStr in self.DATA_TYPE_DICT:
@@ -251,10 +267,9 @@ class GameDataParser(object):
 			f.write(json.dumps(cacheMap));
 
 	def getMd5ByFilePath(self, filePath):
-		if not os.path.exists(filePath):
-			return "";
-		with open(filePath, "rb") as f:
-			return hashlib.md5(f.read()).hexdigest();
+		if os.path.exists(filePath):
+			with open(filePath, "rb") as f:
+				return hashlib.md5(f.read()).hexdigest();
 		return "";
 
 	def parse(self, logger=None, progress=None, interrupt=None, callback=None, isUseCache=True):
@@ -281,16 +296,12 @@ class GameDataParser(object):
 				fullPath = os.path.join(root, fileName);
 				fileMd5 = self.getMd5ByFilePath(fullPath);
 				relativePath = fullPath.replace("\\", "/").replace(dirPath, "");
-				if relativePath in md5Map and md5Map[relativePath].get("md5", "") == fileMd5:
-					newMd5Map[relativePath] = md5Map[relativePath];
-					data = md5Map[relativePath].get("data", "");
-					if data:
-						try:
-							self.onSaveData(data);
-						except Exception as e:
-							logger(f"Failed to save data[{relativePath}]! Err->{e}", "error");
+				if relativePath in md5Map and md5Map[relativePath] == fileMd5:
+					newMd5Map[relativePath] = fileMd5;
 				else:
 					parseFileList.append((fullPath, fileMd5, relativePath));
+		# 遍历的有效表名
+		validSheetNames = [];
 		# 遍历需要解析的文件
 		for i, fileInfo in enumerate(parseFileList):
 			# 检测是否中断
@@ -303,22 +314,24 @@ class GameDataParser(object):
 			dataParser = TableDataParser(fullPath, logger);
 			if dataParser.isValid:
 				logger(f"Try to parse file[{relativePath}]...");
-				content = "";
 				try:
 					for sheet in dataParser.sheets:
 						if not sheet.isValid:
 							continue;
+						sheetName = sheet.name;
+						validSheetNames.append(sheetName);
 						data = self.onParse(sheet, logger);
-						self.onSaveData(data);
-						content += data;
-						logger(f"Succeeded to parse sheet[{sheet.name}].");
+						self.onSaveData(sheetName, data);
+						logger(f"Succeeded to parse sheet[{sheetName}].");
+					newMd5Map[relativePath] = fileMd5;
 					logger(f"Succeeded to parse file[{relativePath}].", "bold");
 				except Exception as e:
 					logger(f"Failed to parse file[{relativePath}]! Err->{e}", "error");
-				newMd5Map[relativePath] = {"md5": fileMd5, "data": content};
 			# 通知进度
 			if callable(progress):
 				progress((i + 1) / len(parseFileList));
+		# 解析后回调
+		self.afterParse(validSheetNames, logger);
 		if callable(progress):
 			progress(1);  # 完成解析
 		# 完成回调
@@ -337,10 +350,13 @@ class GameDataParser(object):
 	def onComplete(self):
 		pass;
 	
-	def onSaveData(self, data):
+	def onSaveData(self, sheetName, data):
 		pass;
 
-	def onParse(self, dataParser, logger):
+	def onParse(self, sheet, logger):
+		pass;
+
+	def afterParse(self, validSheetNames, logger):
 		pass;
 
 	def outputLog(self, text, style=""):

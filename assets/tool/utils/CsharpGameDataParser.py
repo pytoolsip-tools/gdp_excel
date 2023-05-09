@@ -1,4 +1,5 @@
 import os;
+import re;
 import json;
 
 from function.base import *;
@@ -13,58 +14,96 @@ class CsharpGameDataParser(GameDataParser):
 		"INT" : "Int64",
 		"BOOL" : "bool",
 		"FLOAT" : "double",
+		"LIST<STRING>" : "string[]",
+		"LIST<INT>" : "Int64[]",
+		"LIST<BOOL>" : "bool[]",
+		"LIST<FLOAT>" : "double[]",
 	};
 
 	def __init__(self, dirPath, outputPath, templatePath, collectionsPath):
 		super(CsharpGameDataParser, self).__init__(dirPath, outputPath, templatePath);
+
 		self.__collectionsPath = collectionsPath;
+		if not os.path.exists(collectionsPath):
+			os.makedirs(collectionsPath);
 
-	def getProperty(self, keyType, key):
-		return f"""		public {self.DATA_TYPE_CONFIG[keyType]} {key};"""
+	def getDataListStr(self, dataList):
+		dataJson = json.dumps(dataList);
+		dataJson = dataJson.replace("\"", "\\\"");
+		dataJsonRe = re.search("\[(.*)\]", dataJson);
+		if dataJsonRe:
+			return dataJsonRe.group(1);
+		return dataJson;
 
-	def getTemplate(self, className, properties, keyJson, exportKeyJson, valJson):
-		keyJson = keyJson.replace("\"", "\\\"");
-		exportKeyJson = exportKeyJson.replace("\"", "\\\"");
-		valJson = valJson.replace("\"", "\\\"");
-		return f"""
+	def getDataContent(self, className, keyTypeList, exportKeyList, valList):
+		exportKeyListStr = self.getDataListStr(exportKeyList);
+		valListStrList = [];
+		for val in valList:
+			valStrList = []
+			for i in range(val):
+				if isinstance(val[i], list):
+					keyType, key = keyTypeList[i];
+					valStrList.append(f"{self.DATA_TYPE_CONFIG[keyType]} {{{self.getDataListStr(val)}}}");
+				else:
+					valStrList.append(f"{self.getDataListStr(val)}");
+			valListStr = ", ".join(valStrList);
+			valListStrList.append(f"new {className}({valListStr})");
+		valueListStr = ",\n".join(valListStrList);
+	
+		declareList = [];  # 声明列表
+		paramList = [];  # 参数列表
+		assignList = [];  # 赋值列表
+		for keyType, key in keyTypeList:
+			declareList.append(f"""		public {self.DATA_TYPE_CONFIG[keyType]} {key};""");
+			paramList.append(f"""{self.DATA_TYPE_CONFIG[keyType]} {key}""");
+			assignList.append(f"""		this.{key} = {key};""");
+		declareListStr = "\n".join(declareList);
+		paramListStr = ", ".join(paramList);
+		assignListStr = "\n".join(assignList);
 
-	public class {className} : TableRowData {{
-{properties}
-
-		static TableData<{className}> m_data;
-		public static TableData<{className}> TableData() {{
-			if (m_data == null) {{
-				string keyJson = "{keyJson}";
-				string exportKeyJson = "{exportKeyJson}";
-				string valJson = "{valJson}";
-				m_data = new TableData<{className}>(keyJson, exportKeyJson, valJson);
-			}}
-			return m_data;
-		}}
-	}}
-
-"""
-
-	def onStartParse(self):
-		with open(self.__collectionsPath, "w+") as f:
-			f.write("""
-using System;
+		return f"""using System;
 using System.Collections.Generic;
 
-namespace DH.TD {
-""");
+namespace DH.TD {{
+	public class {className} : TableRowData {{
+{declareListStr}
 
-	def onComplete(self):
-		self.onSaveData("}");
+		public {className}({paramListStr}) {{
+{assignListStr}
+		}}
 
-	def onSaveData(self, data):
-		with open(self.__collectionsPath, "a+") as f:
-			f.write(data);  # 追加
+		static TableData<{className}> m_data;
+        public static TableData<{className}> TableData() {{
+            if (m_data == null) {{
+                m_data = new TableData<{className}>(new string[]{{{exportKeyListStr}}}, new {className}[]{{
+                    {valueListStr}
+                }});
+            }}
+            return m_data;
+		}}
+	}}
+}}
+""";
+
+	def onSaveData(self, sheetName, data):
+		filePath = os.path.join(self.__collectionsPath, sheetName);
+		with open(filePath, "w+") as f:
+			f.write(data);
 
 	def onParse(self, sheet, logger):
-		properties = [];
+		keyTypeList = [];
 		for key in sheet.keyList:
-			properties.append(self.getProperty(sheet.getTypeByKey(key), key));
-		template = self.getTemplate(sheet.name + "TD", "\n".join(properties),
-			json.dumps(sheet.keyList), json.dumps(sheet.exportKeyList), json.dumps(sheet.valList));
-		return template;
+			keyTypeList.append((sheet.getTypeByKey(key), key));
+		dataContent = self.getDataContent(sheet.name + "TD", keyTypeList, sheet.exportKeyList, sheet.valList);
+		return dataContent;
+
+	def afterParse(self, validSheetNames, logger):
+		for name in os.listdir(self.__collectionsPath):
+			if not name.endswith("TD"):
+				continue;
+			sheetName = name[:-2];
+			if sheetName in validSheetNames:
+				continue;
+			fullPath = os.path.join(self.__collectionsPath, name);
+			if os.path.isfile(fullPath):
+				os.remove(fullPath);

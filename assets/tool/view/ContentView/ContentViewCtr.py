@@ -151,7 +151,7 @@ class ContentViewCtr(object):
 
 	def createCsharpGameDataParser(self, params):
 		templatePath = GetPathByRelativePath("../../template/csharp", CURRENT_PATH);
-		collectionsPath = os.path.join(params["tgtPath"], "TDCollections.cs");
+		collectionsPath = os.path.join(params["tgtPath"], "collections");
 		return CsharpGameDataParser(params["srcPath"], params["tgtPath"], templatePath, collectionsPath);
 
 	def outputLog(self, text, style=""):
