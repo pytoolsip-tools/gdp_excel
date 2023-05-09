@@ -42,7 +42,7 @@ class CsharpGameDataParser(GameDataParser):
 			for i, elemVal in enumerate(val):
 				if isinstance(elemVal, list):
 					keyType, key = keyTypeList[i];
-					valStrList.append(f"{self.DATA_TYPE_CONFIG[keyType]} {{{self.getDataListStr(elemVal)}}}");
+					valStrList.append(f"new {self.DATA_TYPE_CONFIG[keyType]} {{{self.getDataListStr(elemVal)}}}");
 				else:
 					valStrList.append(f"{self.getDataListStr(elemVal)}");
 			valListStr = ", ".join(valStrList);
