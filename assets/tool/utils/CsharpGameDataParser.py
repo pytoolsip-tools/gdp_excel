@@ -28,8 +28,7 @@ class CsharpGameDataParser(GameDataParser):
 			os.makedirs(collectionsPath);
 
 	def getDataListStr(self, dataList):
-		dataJson = json.dumps(dataList);
-		dataJson = dataJson.replace("\"", "\\\"");
+		dataJson = json.dumps(dataList, ensure_ascii=False);
 		dataJsonRe = re.search("\[(.*)\]", dataJson);
 		if dataJsonRe:
 			return dataJsonRe.group(1);
@@ -40,14 +39,14 @@ class CsharpGameDataParser(GameDataParser):
 		valListStrList = [];
 		for val in valList:
 			valStrList = []
-			for i in range(val):
-				if isinstance(val[i], list):
+			for i, elemVal in enumerate(val):
+				if isinstance(elemVal, list):
 					keyType, key = keyTypeList[i];
-					valStrList.append(f"{self.DATA_TYPE_CONFIG[keyType]} {{{self.getDataListStr(val)}}}");
+					valStrList.append(f"{self.DATA_TYPE_CONFIG[keyType]} {{{self.getDataListStr(elemVal)}}}");
 				else:
-					valStrList.append(f"{self.getDataListStr(val)}");
+					valStrList.append(f"{self.getDataListStr(elemVal)}");
 			valListStr = ", ".join(valStrList);
-			valListStrList.append(f"new {className}({valListStr})");
+			valListStrList.append(f"					new {className}({valListStr})");
 		valueListStr = ",\n".join(valListStrList);
 	
 		declareList = [];  # 声明列表
@@ -56,7 +55,7 @@ class CsharpGameDataParser(GameDataParser):
 		for keyType, key in keyTypeList:
 			declareList.append(f"""		public {self.DATA_TYPE_CONFIG[keyType]} {key};""");
 			paramList.append(f"""{self.DATA_TYPE_CONFIG[keyType]} {key}""");
-			assignList.append(f"""		this.{key} = {key};""");
+			assignList.append(f"""			this.{key} = {key};""");
 		declareListStr = "\n".join(declareList);
 		paramListStr = ", ".join(paramList);
 		assignListStr = "\n".join(assignList);
@@ -73,21 +72,21 @@ namespace DH.TD {{
 		}}
 
 		static TableData<{className}> m_data;
-        public static TableData<{className}> TableData() {{
-            if (m_data == null) {{
-                m_data = new TableData<{className}>(new string[]{{{exportKeyListStr}}}, new {className}[]{{
-                    {valueListStr}
-                }});
-            }}
-            return m_data;
+		public static TableData<{className}> TableData() {{
+			if (m_data == null) {{
+				m_data = new TableData<{className}>(new string[]{{{exportKeyListStr}}}, new {className}[]{{
+{valueListStr}
+				}});
+			}}
+			return m_data;
 		}}
 	}}
 }}
 """;
 
 	def onSaveData(self, sheetName, data):
-		filePath = os.path.join(self.__collectionsPath, sheetName);
-		with open(filePath, "w+") as f:
+		filePath = os.path.join(self.__collectionsPath, f"{sheetName}TD.cs");
+		with open(filePath, "w+", encoding="utf-8") as f:
 			f.write(data);
 
 	def onParse(self, sheet, logger):
