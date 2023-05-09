@@ -42,7 +42,7 @@ class CsharpGameDataParser(GameDataParser):
 			for i, elemVal in enumerate(val):
 				if isinstance(elemVal, list):
 					keyType, key = keyTypeList[i];
-					valStrList.append(f"new {self.DATA_TYPE_CONFIG[keyType]} {{{self.getDataListStr(elemVal)}}}");
+					valStrList.append(f"new {self.DATA_TYPE_CONFIG[keyType]}{{{self.getDataListStr(elemVal)}}}");
 				else:
 					valStrList.append(f"{self.getDataListStr(elemVal)}");
 			valListStr = ", ".join(valStrList);
@@ -53,9 +53,9 @@ class CsharpGameDataParser(GameDataParser):
 		paramList = [];  # 参数列表
 		assignList = [];  # 赋值列表
 		for keyType, key in keyTypeList:
-			declareList.append(f"""		public {self.DATA_TYPE_CONFIG[keyType]} {key};""");
+			declareList.append(f"""		{self.DATA_TYPE_CONFIG[keyType]} _{key}; public {self.DATA_TYPE_CONFIG[keyType]} {key} {{get {{return this._{key};}}}}""");
 			paramList.append(f"""{self.DATA_TYPE_CONFIG[keyType]} {key}""");
-			assignList.append(f"""			this.{key} = {key};""");
+			assignList.append(f"""			this._{key} = {key};""");
 		declareListStr = "\n".join(declareList);
 		paramListStr = ", ".join(paramList);
 		assignListStr = "\n".join(assignList);
