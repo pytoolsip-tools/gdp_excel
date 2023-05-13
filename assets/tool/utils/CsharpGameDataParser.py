@@ -29,7 +29,7 @@ class CsharpGameDataParser(GameDataParser):
 
 	def getDataListStr(self, dataList):
 		dataJson = json.dumps(dataList, ensure_ascii=False);
-		dataJsonRe = re.search("\[(.*)\]", dataJson);
+		dataJsonRe = re.search("^\[(.*)\]$", dataJson);
 		if dataJsonRe:
 			return dataJsonRe.group(1);
 		return dataJson;
@@ -98,11 +98,13 @@ namespace DH.TD {{
 
 	def afterParse(self, validSheetNames, logger):
 		for name in os.listdir(self.__collectionsPath):
-			if not name.endswith("TD"):
+			fileName = os.path.splitext(name)[0];
+			if not fileName.endswith("TD"):
 				continue;
-			sheetName = name[:-2];
+			sheetName = fileName[:-2];
 			if sheetName in validSheetNames:
 				continue;
 			fullPath = os.path.join(self.__collectionsPath, name);
 			if os.path.isfile(fullPath):
 				os.remove(fullPath);
+				logger(f"Succeeded to remove file[{name}].");

@@ -284,6 +284,8 @@ class GameDataParser(object):
 			return;
 		# 开始回调
 		self.onStartParse();
+		# 遍历的有效表名
+		validSheetNames = [];
 		# 解析数据
 		newMd5Map = {};
 		md5Map = {};
@@ -296,12 +298,12 @@ class GameDataParser(object):
 				fullPath = os.path.join(root, fileName);
 				fileMd5 = self.getMd5ByFilePath(fullPath);
 				relativePath = fullPath.replace("\\", "/").replace(dirPath, "");
-				if relativePath in md5Map and md5Map[relativePath] == fileMd5:
-					newMd5Map[relativePath] = fileMd5;
+				md5Data = md5Map.get(relativePath, {});
+				if md5Data and md5Data.get("md5", "") == fileMd5:
+					newMd5Map[relativePath] = md5Data;
+					validSheetNames.extend(md5Data.get("sheets", []));
 				else:
 					parseFileList.append((fullPath, fileMd5, relativePath));
-		# 遍历的有效表名
-		validSheetNames = [];
 		# 遍历需要解析的文件
 		for i, fileInfo in enumerate(parseFileList):
 			# 检测是否中断
@@ -315,15 +317,17 @@ class GameDataParser(object):
 			if dataParser.isValid:
 				logger(f"Try to parse file[{relativePath}]...");
 				try:
+					sheetNames = [];
 					for sheet in dataParser.sheets:
 						if not sheet.isValid:
 							continue;
 						sheetName = sheet.name;
+						sheetNames.append(sheetName);
 						validSheetNames.append(sheetName);
 						data = self.onParse(sheet, logger);
 						self.onSaveData(sheetName, data);
 						logger(f"Succeeded to parse sheet[{sheetName}].");
-					newMd5Map[relativePath] = fileMd5;
+					newMd5Map[relativePath] = {"md5": fileMd5, "sheets": sheetNames};
 					logger(f"Succeeded to parse file[{relativePath}].", "bold");
 				except Exception as e:
 					logger(f"Failed to parse file[{relativePath}]! Err->{e}", "error");
