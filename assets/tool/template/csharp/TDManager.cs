@@ -101,11 +101,11 @@ namespace DH.TD {
     public class TableRowData {
         public object this[string name]{
             get{
-                FieldInfo fieldInfo = GetType().GetField(name);
-                if (fieldInfo == null) {
+                PropertyInfo propertyInfo = GetType().GetProperty(name);
+                if (propertyInfo == null) {
                     return null;
                 }
-                return fieldInfo.GetValue(this);
+                return propertyInfo.GetValue(this);
             }
         }
 
