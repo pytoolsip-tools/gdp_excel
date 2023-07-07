@@ -186,6 +186,9 @@ namespace DH.TD {
         }
 
         public TableData(string[] exportKeys, T[] datas) {
+            if (exportKeys.Length > 0) {
+                m_defaultKey = exportKeys[0];
+            }
             m_exportKeys = exportKeys;
             foreach (T data in datas) {
                 m_dataList.Add(data);
