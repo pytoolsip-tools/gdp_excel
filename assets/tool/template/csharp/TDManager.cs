@@ -193,6 +193,21 @@ namespace DH.TD {
             }
         }
 
+        public delegate T DCloneDataFunc(TableRowData data);
+
+        public bool MergeData<TT>(TableData<TT> tableData, DCloneDataFunc cloneFunc) where TT:TableRowData {
+            // 不改变导出键值
+            // List<string> exportKeys = new List<string>(m_exportKeys);
+            // exportKeys.AddRange(tableData.m_exportKeys);
+
+            foreach (TT data in tableData.m_dataList) {
+                T newData = cloneFunc(data);
+                m_dataList.Add(newData);
+                addToDataMap(newData, m_dataList.Count - 1);
+            }
+            return true;
+        }
+
         void addToDataMap(T data, int index) {
             foreach (string exportKey in m_exportKeys) {
                 if (!m_dataMap.ContainsKey(exportKey)) {
