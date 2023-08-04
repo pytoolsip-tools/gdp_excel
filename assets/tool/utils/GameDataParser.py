@@ -7,29 +7,62 @@ import hashlib;
 import threading;
 
 
-def ConvertListData(dataStr, typeFunc):
+def ConvertListData(val, typeFunc):
 	dataList = [];
 	try:
-		dataStr = dataStr.strip();
-		if dataStr:
-			dataList = json.loads(dataStr);
+		val = val.strip();
+		if val:
+			dataList = json.loads(val);
 	except Exception:
-		pass
+		raise Exception(f"Invalid data[{val}] of list type!");
 	return [typeFunc(data) for data in dataList];
 
 
+def convertSetDataByTypes(data, types):
+	if not isinstance(data, list):
+		raise Exception(f"Invalid convert data[{data}] of set type!");
+	setData = [];
+	for i, typeStr in enumerate(types):
+		typeCfg = TABLE_DATA_TYPE_DICT[typeStr];
+		if i < len(data):
+			setData.append(typeCfg["func"](data[i]));
+		else:
+			setData.append(typeCfg["default"]);
+	return setData;
+	
+
+def ConvertSetData(val, types, isList):
+	dataList = [];
+	try:
+		val = val.strip();
+		if val:
+			dataList = json.loads(val);
+	except Exception:
+		raise Exception(f"Invalid data[{val}] of set type!");
+	if isList:
+		setDataList = [];
+		for data in dataList:
+			setDataList.append(convertSetDataByTypes(data, types));
+		return setDataList;
+	return convertSetDataByTypes(dataList, types);
+
+
+TABLE_DATA_DEFAULT_TYPE = "STRING";
+TABLE_DATA_TYPE_DICT = {
+	"STRING" : {"func": lambda val: str(val), "default": ""},
+	"INT" : {"func": lambda val: int(val), "default": 0},
+	"BOOL" : {"func": lambda val: bool(val), "default": False},
+	"FLOAT" : {"func": lambda val: float(val), "default": 0},
+	"LIST<STRING>" : {"func": lambda val: ConvertListData(val, str), "default": []},
+	"LIST<INT>" : {"func": lambda val: ConvertListData(val, int), "default": []},
+	"LIST<BOOL>" : {"func": lambda val: ConvertListData(val, bool), "default": []},
+	"LIST<FLOAT>" : {"func": lambda val: ConvertListData(val, float), "default": []},
+	
+	"SET" : {"func": lambda val, types: ConvertSetData(val, types, False), "default": None},
+	"LIST<SET>" : {"func": lambda val, types: ConvertSetData(val, types, True), "default": []},
+};
+
 class SheetDataParser(object):
-	DEFAULT_DATA_TYPE = "STRING";
-	DATA_TYPE_DICT = {
-		"STRING" : {"func": lambda s: str(s), "default": ""},
-		"INT" : {"func": lambda s: int(s), "default": 0},
-		"BOOL" : {"func": lambda s: bool(s), "default": False},
-		"FLOAT" : {"func": lambda s: float(s), "default": 0},
-		"LIST<STRING>" : {"func": lambda s: ConvertListData(s, str), "default": []},
-		"LIST<INT>" : {"func": lambda s: ConvertListData(s, int), "default": []},
-		"LIST<BOOL>" : {"func": lambda s: ConvertListData(s, bool), "default": []},
-		"LIST<FLOAT>" : {"func": lambda s: ConvertListData(s, float), "default": []},
-	};
 
 	def __init__(self, sheet):
 		super(SheetDataParser, self).__init__();
@@ -94,11 +127,15 @@ class SheetDataParser(object):
 			val = [];
 			for idx in idxList:
 				key = self.__keyDict[idx];
-				typeFunc = self.DATA_TYPE_DICT[self.getTypeByKey(key)]["func"];
+				typeStr, typeParams = self.getTypeParamsByKey(key);
+				typeFunc = TABLE_DATA_TYPE_DICT[typeStr]["func"];
 				if isinstance(row[idx], str) and not row[idx]:
 					val.append(self.getDefaultByKey(key));
 				else:
-					val.append(typeFunc(self.convertVal(row[idx])));
+					if typeParams is None:
+						val.append(typeFunc(self.convertVal(row[idx])));
+					else:
+						val.append(typeFunc(self.convertVal(row[idx]), typeParams));
 			valList.append(val);
 		return valList;
 
@@ -117,15 +154,29 @@ class SheetDataParser(object):
 			return int(val);  # 为了解决整数转字符串有误问题
 		return val;
 	
-	def getTypeByKey(self, key):
-		return self.__typeDict.get(key, self.DEFAULT_DATA_TYPE);
-	
+	def getTypeParams(self, typeStr):
+		ret = re.search("(LIST<)?SET<([a-zA-Z,\s]+)>>?", typeStr);
+		if ret:
+			typeStrList = [typeStr.strip() for typeStr in ret.group(2).split(",")];
+			if ret.group(1):
+				return "LIST<SET>", typeStrList;
+			return "SET", typeStrList;
+		return typeStr, None;
+
+	def getTypeParamsByKey(self, key):
+		typeStr = self.__typeDict.get(key, TABLE_DATA_DEFAULT_TYPE);
+		return self.getTypeParams(typeStr);
+
 	def getDefaultByKey(self, key):
-		typeParams = self.DATA_TYPE_DICT[self.getTypeByKey(key)];
-		defaultVal = typeParams["default"];
+		typeStr, typeParams = self.getTypeParamsByKey(key);
+		typeCfg = TABLE_DATA_TYPE_DICT[typeStr];
+		defaultVal = typeCfg["default"];
 		if key in self.__defaultDict:
 			try:
-				defaultVal = typeParams["func"](self.__defaultDict[key]);
+				if typeParams is None:
+					defaultVal = typeCfg["func"](self.__defaultDict[key]);
+				else:
+					defaultVal = typeCfg["func"](self.__defaultDict[key], typeParams);
 			except Exception:
 				pass
 		return defaultVal;
@@ -163,11 +214,11 @@ class SheetDataParser(object):
 					ret = re.search("([a-zA-Z<>]+)\((.*)\)", typeStrip);
 					if not ret:
 						typeStr = typeStrip.upper();
-						if typeStr in self.DATA_TYPE_DICT:
+						if self.getTypeParams(typeStr)[0] in TABLE_DATA_TYPE_DICT:
 							self.__typeDict[key] = typeStr;
 					else:
 						typeStr = ret.group(1).upper();
-						if typeStr in self.DATA_TYPE_DICT:
+						if self.getTypeParams(typeStr)[0] in TABLE_DATA_TYPE_DICT:
 							self.__typeDict[key] = typeStr;
 							self.__defaultDict[key] = ret.group(2);
 				if self.__typeDict:

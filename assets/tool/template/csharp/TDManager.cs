@@ -303,4 +303,19 @@ namespace DH.TD {
             return m_dataList.ToArray();
         }
     }
+
+    public class TableSetData {
+        object[] m_args;
+
+        public TableSetData(params object[] args) {
+            m_args = args;
+        }
+
+        public T Get<T>(int idx, T defaultVal=default(T)) {
+            if (idx < m_args.Length) {
+                return (T) m_args[idx];
+            }
+            return defaultVal;
+        }
+    }
 }

@@ -18,6 +18,8 @@ class CsharpGameDataParser(GameDataParser):
 		"LIST<INT>" : "Int64[]",
 		"LIST<BOOL>" : "bool[]",
 		"LIST<FLOAT>" : "double[]",
+		"SET" : "TableSetData",
+		"LIST<SET>" : "TableSetData[]",
 	};
 
 	def __init__(self, dirPath, outputPath, templatePath, collectionsPath):
@@ -42,7 +44,14 @@ class CsharpGameDataParser(GameDataParser):
 			for i, elemVal in enumerate(val):
 				if isinstance(elemVal, list):
 					keyType, key = keyTypeList[i];
-					valStrList.append(f"new {self.DATA_TYPE_CONFIG[keyType]}{{{self.getDataListStr(elemVal)}}}");
+					if keyType == "SET":
+						valStrList.append(f"new {self.DATA_TYPE_CONFIG[keyType]}({self.getDataListStr(elemVal)})");
+					elif keyType == "LIST<SET>":
+						setTypeCfg = self.DATA_TYPE_CONFIG["SET"];
+						dataListStr = ", ".join([f"new {setTypeCfg}({self.getDataListStr(subElemVal)})" for subElemVal in elemVal]);
+						valStrList.append(f"new {self.DATA_TYPE_CONFIG[keyType]}{{{dataListStr}}}");
+					else:
+						valStrList.append(f"new {self.DATA_TYPE_CONFIG[keyType]}{{{self.getDataListStr(elemVal)}}}");
 				else:
 					valStrList.append(f"{self.getDataListStr(elemVal)}");
 			valListStr = ", ".join(valStrList);
@@ -92,7 +101,7 @@ namespace DH.TD {{
 	def onParse(self, sheet, logger):
 		keyTypeList = [];
 		for key in sheet.keyList:
-			keyTypeList.append((sheet.getTypeByKey(key), key));
+			keyTypeList.append((sheet.getTypeParamsByKey(key)[0], key));
 		dataContent = self.getDataContent(sheet.name + "TD", keyTypeList, sheet.exportKeyList, sheet.valList);
 		return dataContent;
 
