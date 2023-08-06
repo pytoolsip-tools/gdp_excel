@@ -7,20 +7,24 @@ import hashlib;
 import threading;
 
 
-def ConvertListData(val, typeFunc):
-	dataList = [];
+def convertDataList(val, raiseKey=""):
 	try:
 		val = val.strip();
 		if val:
-			dataList = json.loads(val);
+			return json.loads(val);
 	except Exception:
-		raise Exception(f"Invalid data[{val}] of list type!");
+		raise Exception(f"Failed to load data list by val[{val}]!!! [{raiseKey}]");
+	return [];
+
+
+def ConvertListData(val, typeFunc):
+	dataList = convertDataList(val, raiseKey="List");
 	return [typeFunc(data) for data in dataList];
 
 
-def convertSetDataByTypes(data, types):
+def convertListDataByTypes(data, types):
 	if not isinstance(data, list):
-		raise Exception(f"Invalid convert data[{data}] of set type!");
+		raise Exception(f"Invalid convert list data[{data}] by types!");
 	setData = [];
 	for i, typeStr in enumerate(types):
 		typeCfg = TABLE_DATA_TYPE_DICT[typeStr];
@@ -31,20 +35,27 @@ def convertSetDataByTypes(data, types):
 	return setData;
 	
 
-def ConvertSetData(val, types, isList):
-	dataList = [];
-	try:
-		val = val.strip();
-		if val:
-			dataList = json.loads(val);
-	except Exception:
-		raise Exception(f"Invalid data[{val}] of set type!");
+def ConvertSetData(val, types, isList, raiseKey="Set"):
+	dataList = convertDataList(val, raiseKey=raiseKey);
 	if isList:
 		setDataList = [];
 		for data in dataList:
-			setDataList.append(convertSetDataByTypes(data, types));
+			setDataList.append(convertListDataByTypes(data, types));
 		return setDataList;
-	return convertSetDataByTypes(dataList, types);
+	return convertListDataByTypes(dataList, types);
+
+
+def ConvertList2Data(val, typeFunc):
+	dataList = convertDataList(val, raiseKey="List2");
+	colCnt = 0;
+	for data in dataList:
+		if colCnt <= 0:
+			colCnt = len(data);
+		if not isinstance(data, list) or len(data) != colCnt:
+			raise Exception(f"Invalid convert list2 data[{data}]!");
+		for i in range(len(data)):
+			data[i] = typeFunc(data[i]);
+	return dataList;
 
 
 TABLE_DATA_DEFAULT_TYPE = "STRING";
@@ -53,13 +64,19 @@ TABLE_DATA_TYPE_DICT = {
 	"INT" : {"func": lambda val: int(val), "default": 0},
 	"BOOL" : {"func": lambda val: bool(val), "default": False},
 	"FLOAT" : {"func": lambda val: float(val), "default": 0},
+
 	"LIST<STRING>" : {"func": lambda val: ConvertListData(val, str), "default": []},
 	"LIST<INT>" : {"func": lambda val: ConvertListData(val, int), "default": []},
 	"LIST<BOOL>" : {"func": lambda val: ConvertListData(val, bool), "default": []},
 	"LIST<FLOAT>" : {"func": lambda val: ConvertListData(val, float), "default": []},
-	
-	"SET" : {"func": lambda val, types: ConvertSetData(val, types, False), "default": None},
-	"LIST<SET>" : {"func": lambda val, types: ConvertSetData(val, types, True), "default": []},
+
+	"LIST2<STRING>" : {"func": lambda val: ConvertList2Data(val, str), "default": []},
+	"LIST2<INT>" : {"func": lambda val: ConvertList2Data(val, int), "default": []},
+	"LIST2<BOOL>" : {"func": lambda val: ConvertList2Data(val, bool), "default": []},
+	"LIST2<FLOAT>" : {"func": lambda val: ConvertList2Data(val, float), "default": []},
+
+	"SET" : {"func": lambda val, types: ConvertSetData(val, types, False, raiseKey="SET"), "default": None},
+	"LIST<SET>" : {"func": lambda val, types: ConvertSetData(val, types, True, raiseKey="LIST<SET>"), "default": []},
 };
 
 class SheetDataParser(object):

@@ -18,9 +18,15 @@ class CsharpGameDataParser(GameDataParser):
 		"LIST<INT>" : "Int64[]",
 		"LIST<BOOL>" : "bool[]",
 		"LIST<FLOAT>" : "double[]",
+
+		"LIST2<STRING>" : "string[,]",
+		"LIST2<INT>" : "Int64[,]",
+		"LIST2<BOOL>" : "bool[,]",
+		"LIST2<FLOAT>" : "double[,]",
+
 		"SET" : "TableSetData",
 		"LIST<SET>" : "TableSetData[]",
-	};
+	}
 
 	def __init__(self, dirPath, outputPath, templatePath, collectionsPath):
 		super(CsharpGameDataParser, self).__init__(dirPath, outputPath, templatePath);
@@ -36,6 +42,21 @@ class CsharpGameDataParser(GameDataParser):
 			return dataJsonRe.group(1);
 		return dataJson;
 
+	def getListDataValStr(self, keyType, val):
+		if keyType == "SET":
+			return f"new {self.DATA_TYPE_CONFIG[keyType]}({self.getDataListStr(val)})";
+		elif keyType == "LIST<SET>":
+			setTypeCfg = self.DATA_TYPE_CONFIG["SET"];
+			dataListStr = ", ".join([f"new {setTypeCfg}({self.getDataListStr(subVal)})" for subVal in val]);
+			return f"new {self.DATA_TYPE_CONFIG[keyType]}{{{dataListStr}}}";
+		else:
+			keyTypeRe = re.search("^LIST2<(.*)>$", keyType);
+			if keyTypeRe:
+				dataListStr = ", ".join([f"{{{self.getDataListStr(subVal)}}}" for subVal in val]);
+			else:
+				dataListStr = self.getDataListStr(val);
+			return f"new {self.DATA_TYPE_CONFIG[keyType]}{{{dataListStr}}}";
+
 	def getDataContent(self, className, keyTypeList, exportKeyList, valList):
 		exportKeyListStr = self.getDataListStr(exportKeyList);
 		valListStrList = [];
@@ -43,15 +64,8 @@ class CsharpGameDataParser(GameDataParser):
 			valStrList = []
 			for i, elemVal in enumerate(val):
 				if isinstance(elemVal, list):
-					keyType, key = keyTypeList[i];
-					if keyType == "SET":
-						valStrList.append(f"new {self.DATA_TYPE_CONFIG[keyType]}({self.getDataListStr(elemVal)})");
-					elif keyType == "LIST<SET>":
-						setTypeCfg = self.DATA_TYPE_CONFIG["SET"];
-						dataListStr = ", ".join([f"new {setTypeCfg}({self.getDataListStr(subElemVal)})" for subElemVal in elemVal]);
-						valStrList.append(f"new {self.DATA_TYPE_CONFIG[keyType]}{{{dataListStr}}}");
-					else:
-						valStrList.append(f"new {self.DATA_TYPE_CONFIG[keyType]}{{{self.getDataListStr(elemVal)}}}");
+					keyType, _ = keyTypeList[i];
+					valStrList.append(self.getListDataValStr(keyType, elemVal));
 				else:
 					valStrList.append(f"{self.getDataListStr(elemVal)}");
 			valListStr = ", ".join(valStrList);
