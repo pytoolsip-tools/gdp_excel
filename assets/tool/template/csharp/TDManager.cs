@@ -308,7 +308,17 @@ namespace DH.TD {
         object[] m_args;
 
         public TableSetData(params object[] args) {
-            m_args = args;
+            m_args = new object[args.Length];
+            for (int i = 0; i < args.Length; i++) {
+                object arg = args[i];
+                if (arg.GetType() == typeof(int) || arg.GetType() == typeof(Int16) || arg.GetType() == typeof(Int32)) {
+                    m_args[i] = Int64.Parse(arg.ToString());
+                } else if (arg.GetType() == typeof(float)) {
+                    m_args[i] = double.Parse(arg.ToString());
+                } else {
+                    m_args[i] = arg;
+                }
+            }
         }
 
         public T Get<T>(int idx, T defaultVal=default(T)) {
