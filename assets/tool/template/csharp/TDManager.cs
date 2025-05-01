@@ -9,6 +9,9 @@ namespace DH.TD {
 
     class TDTextGetter<T> : ITDTextGetter where T:TableRowData {
         public string GetText(string textKey, string language) {
+            if (string.IsNullOrEmpty(textKey)) {
+                return "";  // 返回空字符串
+            }
             T textConfig = TDManager.Get<T>(textKey);
             if (textConfig == null) {
                 return $"<{textKey}>";
