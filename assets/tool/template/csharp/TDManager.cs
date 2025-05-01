@@ -3,9 +3,43 @@ using System.Reflection;
 using System.Collections.Generic;
 
 namespace DH.TD {
+    interface ITDTextGetter {
+        string GetText(string textKey, string language);
+    }
+
+    class TDTextGetter<T> : ITDTextGetter where T:TableRowData {
+        public string GetText(string textKey, string language) {
+            T textConfig = TDManager.Get<T>(textKey);
+            if (textConfig == null) {
+                return $"<{textKey}>";
+            }
+            return textConfig[$"text_{language}"].ToString();
+        }
+    }
+
+    public static class TDTextGetter {
+        static ITDTextGetter m_textGetter;
+        public static void SetTextConfig<T>() where T:TableRowData {
+            m_textGetter = new TDTextGetter<T>();
+        }
+
+        static string m_language;
+        public static void SetLanguage(string language) {
+            m_language = language;
+        }
+
+        public static string GetText(string textKey, string language=null) {
+            if (language == null) {
+                language = m_language;
+            }
+            return m_textGetter.GetText(textKey, language);
+        }
+
+    }
+
     public class TDManager {
         static TDManager m_instance;
-        public static TDManager Instance {
+        static TDManager Instance {
             get {
                 if (m_instance == null) {
                     m_instance = new TDManager();
@@ -171,6 +205,28 @@ namespace DH.TD {
             return valList;
         }
 
+        protected string _text_(string textKey) {
+            return TDTextGetter.GetText(textKey);
+        }
+
+        protected string[] _text_(string[] textKeys) {
+            string[] texts = new string[textKeys.Length];
+            for (int i = 0; i < texts.Length; i++) {
+                texts[i] = TDTextGetter.GetText(textKeys[i]);
+            }
+            return texts;
+        }
+
+        protected string[,] _text_(string[,] textKeys) {
+            string[,] texts = new string[textKeys.GetLength(0),textKeys.GetLength(1)];
+            for (int i = 0; i < texts.GetLength(0); i++) {
+                for (int j = 0; j < texts.GetLength(1); j++) {
+                    texts[i, j] = TDTextGetter.GetText(textKeys[i, j]);
+                }
+            }
+            return texts;
+        }
+
     }
 
     public class TableData<T> where T:TableRowData {
@@ -181,30 +237,35 @@ namespace DH.TD {
         string m_defaultKey = "id";
         string[] m_exportKeys = new string[0];
 
+        string[] m_dataKeys = new string[0];
+
         public string DefaultKey {
             get { return m_defaultKey; }
         }
 
-        public TableData(string[] exportKeys, T[] datas) {
+        public TableData(string[] exportKeys, string[] dataKeys, T[] datas) {
             if (exportKeys.Length > 0) {
                 m_defaultKey = exportKeys[0];
             }
             m_exportKeys = exportKeys;
+            m_dataKeys = dataKeys;
             foreach (T data in datas) {
                 m_dataList.Add(data);
                 addToDataMap(data, m_dataList.Count - 1);
             }
         }
 
-        public delegate T DCloneDataFunc(TableRowData data);
-
-        public bool MergeData<TT>(TableData<TT> tableData, DCloneDataFunc cloneFunc) where TT:TableRowData {
+        public bool MergeData<TT>(TableData<TT> tableData) where TT:TableRowData {
             // 不改变导出键值
             // List<string> exportKeys = new List<string>(m_exportKeys);
             // exportKeys.AddRange(tableData.m_exportKeys);
 
             foreach (TT data in tableData.m_dataList) {
-                T newData = cloneFunc(data);
+                List<object> args = new List<object>();
+                foreach (string key in m_dataKeys) {
+                    args.Add(data[key]);
+                }
+                T newData = Activator.CreateInstance(typeof(T), args.ToArray()) as T;
                 m_dataList.Add(newData);
                 addToDataMap(newData, m_dataList.Count - 1);
             }
@@ -304,26 +365,53 @@ namespace DH.TD {
         }
     }
 
-    public class TableSetData {
-        object[] m_args;
+    public class TableSetArgData {
+        public delegate object DArgFunc();
 
-        public TableSetData(params object[] args) {
-            m_args = new object[args.Length];
-            for (int i = 0; i < args.Length; i++) {
-                object arg = args[i];
-                if (arg.GetType() == typeof(Int16) || arg.GetType() == typeof(Int32)) {
-                    m_args[i] = Int64.Parse(arg.ToString());
-                } else if (arg.GetType() == typeof(float)) {
-                    m_args[i] = double.Parse(arg.ToString());
-                } else {
-                    m_args[i] = arg;
+        int m_index;
+        object m_argObj;
+        DArgFunc m_argFunc;
+        public TableSetArgData(int index, object argObj, DArgFunc argFunc) {
+            m_index = index;
+            m_argObj = argObj;
+            if (argObj != null) {
+                if (argObj.GetType() == typeof(Int16) || argObj.GetType() == typeof(Int32)) {
+                    m_argObj = Int64.Parse(argObj.ToString());
+                } else if (argObj.GetType() == typeof(float)) {
+                    m_argObj = double.Parse(argObj.ToString());
                 }
+            }
+            m_argFunc = argFunc;
+        }
+
+        public int GetIndex() {
+            return m_index;
+        }
+
+        public T Get<T>() {
+            if (m_argObj != null) {
+                return (T) m_argObj;
+            }
+            if (m_argFunc != null) {
+                return (T) m_argFunc();
+            }
+            return default(T);
+        }
+    }
+
+    public class TableSetData {
+        Dictionary<int, TableSetArgData> m_argDict = new Dictionary<int, TableSetArgData>();
+
+        public TableSetData(params TableSetArgData[] args) {
+            m_argDict = new Dictionary<int, TableSetArgData>();
+            foreach (TableSetArgData arg in args) {
+                m_argDict[arg.GetIndex()] = arg;
             }
         }
 
         public T Get<T>(int idx, T defaultVal=default(T)) {
-            if (idx < m_args.Length) {
-                return (T) m_args[idx];
+            if (m_argDict.ContainsKey(idx)) {
+                return m_argDict[idx].Get<T>();
             }
             return defaultVal;
         }

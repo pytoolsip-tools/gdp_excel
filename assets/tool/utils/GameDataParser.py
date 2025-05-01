@@ -60,16 +60,19 @@ def ConvertList2Data(val, typeFunc):
 
 TABLE_DATA_DEFAULT_TYPE = "STRING";
 TABLE_DATA_TYPE_DICT = {
+	"TEXT" : {"func": lambda val: str(val), "default": ""},
 	"STRING" : {"func": lambda val: str(val), "default": ""},
 	"INT" : {"func": lambda val: int(val), "default": 0},
 	"BOOL" : {"func": lambda val: bool(val), "default": False},
 	"FLOAT" : {"func": lambda val: float(val), "default": 0},
 
+	"LIST<TEXT>" : {"func": lambda val: ConvertListData(val, str), "default": []},
 	"LIST<STRING>" : {"func": lambda val: ConvertListData(val, str), "default": []},
 	"LIST<INT>" : {"func": lambda val: ConvertListData(val, int), "default": []},
 	"LIST<BOOL>" : {"func": lambda val: ConvertListData(val, bool), "default": []},
 	"LIST<FLOAT>" : {"func": lambda val: ConvertListData(val, float), "default": []},
 
+	"LIST2<TEXT>" : {"func": lambda val: ConvertList2Data(val, str), "default": []},
 	"LIST2<STRING>" : {"func": lambda val: ConvertList2Data(val, str), "default": []},
 	"LIST2<INT>" : {"func": lambda val: ConvertList2Data(val, int), "default": []},
 	"LIST2<BOOL>" : {"func": lambda val: ConvertList2Data(val, bool), "default": []},
